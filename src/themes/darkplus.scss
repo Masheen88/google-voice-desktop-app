@@ -8,19 +8,39 @@ $border: #252525;
 $active: #30a99b;
 $button: #212425;
 
+// Helper tones (keeps theme consistent everywhere)
+$panel: lighten($background, 3%); // cards / menus
+$hover: lighten($background, 4%); // row hover
+$muted: rgba($foreground, 0.85); // secondary text (brighter than before)
+$muted-2: rgba($foreground, 0.7); // tertiary text (brighter than before)
+$border-strong: lighten($border, 18%); // stronger separators
+$unread-bg: darken($background, 2%);
+$icon-bg: darken($primary, 8%);
+
+// Semantic icon colors (kept vivid, but theme-consistent)
+$danger: #d93025;
+$info: #1a73e8;
+$success: #1e8e3e;
+
 @import "base";
+
+/* =========================
+   Global base
+   ========================= */
 
 %side-nav {
   border-right: 1px solid $border;
 }
 
 div {
+  color: $foreground; // <— force readable global text
   border-color: $border;
 }
 mat-divider {
   border-color: $border;
 }
 
+// Intentional: hide generic scrollbars in darkplus
 ::-webkit-scrollbar {
   width: 0px;
 }
@@ -29,9 +49,94 @@ mat-divider {
   color: $active;
 }
 
+/* =========================
+   Dial-Pad / left sidebar targeted fixes
+   (mirrors dracula so text isn't default-dark)
+   ========================= */
+
+//left sidebar icons
+a.gb_de.gb_Vc {
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  background-color: $selection;
+}
+
+span.mat-mdc-list-item-unscoped-content.mdc-list-item__primary-text {
+  color: $foreground;
+}
+
+a.mat-mdc-list-item.mdc-list-item.mat-mdc-tooltip-trigger.navListItem.mat-mdc-list-item-interactive.mat-mdc-list-item-single-line.mdc-list-item--with-one-line.ng-star-inserted.mdc-list-item--activated,
+//if hovered
+a.mat-mdc-list-item.mdc-list-item.mat-mdc-tooltip-trigger.navListItem.mat-mdc-list-item-interactive.mat-mdc-list-item-single-line.mdc-list-item--with-one-line.ng-star-inserted:hover {
+  background-color: $selection;
+}
+
+.mat-ripple.container.read.ng-star-inserted.active,
+//if hovered
+.mat-ripple.container.read.ng-star-inserted:hover {
+  background-color: $selection;
+}
+
+.gvPageRoot[_nghost-ng-c1542851374] .title[_ngcontent-ng-c1542851374],
+.gvPageRoot [_nghost-ng-c1542851374] .title[_ngcontent-ng-c1542851374] {
+  color: $foreground;
+}
+
+span.mat-mdc-button-persistent-ripple.mdc-button__ripple {
+  background-color: rgba($background, 0.925);
+}
+
+.input-row.ng-tns-c2117285075-2 {
+  color: $foreground;
+  background-color: rgba($background, 0.925);
+}
+
+input#il1 {
+  color: $foreground;
+  background-color: $background;
+  border-radius: 0.5rem;
+  //padding left/right ie x
+  padding: 0 0.5rem;
+
+  //   placeholder text color
+  &::placeholder {
+    color: rgba($foreground, 0.7);
+  }
+}
+
+button.mdc-button.mat-mdc-button-base.call-button.ng-tns-c2117285075-2.mat-mdc-button.mat-primary.mat-mdc-button-disabled {
+  color: $foreground;
+}
+
+.input-row {
+  gap: 0.5rem;
+}
+
+span.mdc-button__label {
+  color: $foreground;
+}
+
+.dialpad-container {
+  background-color: $background;
+}
+
+button.mdc-button.mat-mdc-button-base.button.mat-mdc-button.mat-unthemed {
+  border: 1px solid rgba($background, 0.44);
+  margin: 0.25rem;
+}
+
+/* =========================
+   Thread list + unread
+   ========================= */
+
+%conversation {
+  background-color: transparent;
+  border-color: $border-strong;
+}
+
 gv-thread-item-detail :first-child {
   opacity: 1;
-  color: #999999;
+  color: $muted-2;
 }
 
 .gvHighContrast.gvPageRoot
@@ -39,136 +144,186 @@ gv-thread-item-detail :first-child {
   .thread-info.read[_ngcontent-oqk-c303]
   .latest-item-details[_ngcontent-oqk-c303] {
   opacity: 1;
-  color: #999999;
-}
-
-%conversation {
-  background-color: transparent;
-  border-color: #505050;
+  color: $muted-2;
 }
 
 div .caption {
-  color: #82898e;
-}
-
-.md-button.md-raised[disabled] {
-  background-color: $secondary;
-}
-
-.md-button.md-raised[disabled] {
-  opacity: 0.5;
-}
-
-div.call-as-label {
-  color: #858d92;
-}
-
-path[d="M19.59 7L12 14.59 6.41 9H11V7H3v8h2v-4.59l7 7 9-9L19.59 7z"] {
-  color: #d93025;
-  opacity: 1;
-}
-
-path[d="M9 5v2h6.59L4 18.59 5.41 20 17 8.41V15h2V5H9z"] {
-  color: #1a73e8;
-  opacity: 1;
-}
-
-path[d="M15 19v-2H8.41L20 5.41 18.59 4 7 15.59V9H5v10h10z"] {
-  color: #1e8e3e;
-  opacity: 1;
-}
-
-gv-contact-list.YYoZ8c-npMLoc {
-  background-color: $background;
+  color: $muted-2;
 }
 
 .rkljfb-biJjHb.gmat-caption.flex-noshrink {
   opacity: 1;
-  color: #999999;
+  color: $muted-2;
 }
 
-md-menu-content {
-  background-color: #181a1b;
+/* Make unread texts a bit more obvious */
+.gmat-subtitle-2.gvThreadItem-unread {
+  font-weight: bold;
+  background-color: $secondary;
 }
 
-p.gmat-body-2 {
-  color: #fff;
+/* =========================
+   Sidebar / thread list base (missing in darkplus)
+   Mirrors dracula for readability
+   ========================= */
+
+/* Whole left sidebar scroll area */
+.cdk-virtual-scroll-viewport.list-viewport {
+  background: $background !important; // sidebar bg
+  color: $foreground !important; // default text
+}
+
+/* The <ol> containing rows */
+.cdk-virtual-scroll-viewport.list-viewport ol.list {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Each thread row container (clickable card) */
+.cdk-virtual-scroll-viewport.list-viewport li.list-item .mat-ripple.container {
+  background: transparent !important;
+  border-bottom: 1px solid $border !important;
+  color: $foreground !important;
+  -webkit-text-fill-color: $foreground !important; // Google sometimes uses fill-color
+}
+
+/* Hover state */
+.cdk-virtual-scroll-viewport.list-viewport
+  li.list-item
+  .mat-ripple.container:hover {
+  background: $hover !important;
+}
+
+/* Active / selected thread */
+.cdk-virtual-scroll-viewport.list-viewport
+  li.list-item
+  .mat-ripple.container.active {
+  background: $selection !important;
+  border-left: 3px solid $active !important;
+}
+
+/* Unread emphasis (if present) */
+.cdk-virtual-scroll-viewport.list-viewport
+  li.list-item
+  .mat-ripple.container.unread {
+  background: $unread-bg !important;
+  font-weight: 600 !important;
+}
+
+//NOTE ext inside rows
+
+.cdk-virtual-scroll-viewport.list-viewport .thread-details,
+.cdk-virtual-scroll-viewport.list-viewport .thread-details * {
+  color: $foreground !important;
+  -webkit-text-fill-color: $foreground !important;
+}
+
+/* Names / participants */
+.cdk-virtual-scroll-viewport.list-viewport .participants {
+  color: #ffffff !important; // keep high contrast like dracula
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Subtitle / call status line */
+.cdk-virtual-scroll-viewport.list-viewport .subtitle {
+  color: $muted !important;
+  -webkit-text-fill-color: $muted !important;
+}
+
+/* Timestamp */
+.cdk-virtual-scroll-viewport.list-viewport .timestamp {
+  color: $muted-2 !important;
+  -webkit-text-fill-color: $muted-2 !important;
+}
+
+/* =========================
+   Icons in rows
+   ========================= */
+
+/* Call direction icons, phone icon, etc. */
+.cdk-virtual-scroll-viewport.list-viewport mat-icon,
+.cdk-virtual-scroll-viewport.list-viewport mat-icon svg {
+  color: $foreground !important;
+  fill: currentColor !important;
+}
+
+/* Action button (phone) hover */
+.cdk-virtual-scroll-viewport.list-viewport .call-button:hover mat-icon,
+.cdk-virtual-scroll-viewport.list-viewport .call-button:hover mat-icon svg {
+  color: $active !important;
+  fill: $active !important;
+}
+
+/* =========================
+   Scrollbar (list-viewport)
+   (missing in darkplus)
+   ========================= */
+
+.cdk-virtual-scroll-viewport.list-viewport::-webkit-scrollbar {
+  width: 12px;
+}
+
+.cdk-virtual-scroll-viewport.list-viewport::-webkit-scrollbar-thumb {
+  background: $selection;
+  border-radius: 8px;
+}
+
+.cdk-virtual-scroll-viewport.list-viewport::-webkit-scrollbar-track {
+  background: $background;
+}
+
+/* =========================
+   Buttons / labels
+   ========================= */
+
+.md-button.md-raised[disabled] {
+  background-color: $secondary;
+  opacity: 0.5;
+}
+
+div.call-as-label {
+  color: $muted;
+}
+
+/* =========================
+   Call direction / status icons
+   (leave semantic colors alone)
+   ========================= */
+
+path[d="M19.59 7L12 14.59 6.41 9H11V7H3v8h2v-4.59l7 7 9-9L19.59 7z"] {
+  color: $danger;
+  opacity: 1;
+}
+
+path[d="M9 5v2h6.59L4 18.59 5.41 20 17 8.41V15h2V5H9z"] {
+  color: $info;
+  opacity: 1;
+}
+
+path[d="M15 19v-2H8.41L20 5.41 18.59 4 7 15.59V9H5v10h10z"] {
+  color: $success;
+  opacity: 1;
 }
 
 .gvHighContrast .mat-icon-button.mat-accent {
-  color: #d5d5d5;
+  color: $foreground;
 }
 
-.YYoZ8c-VeKiLd .YYoZ8c-NkdnBe:not([disabled]) {
-  background-color: $primary;
+path[d="M10 17l5-5-5-5v10z"] {
+  color: $foreground;
 }
 
-/* settings view fixes start here */
+/* =========================
+   Menus / dropdowns
+   ========================= */
 
-.layout-row > md-content {
-  background-color: $background;
+md-menu-content {
+  background-color: $panel;
 }
 
-.gvPageRoot .W3hWSd span[role="heading"] {
-  color: rgb(227, 227, 227);
-}
-
-div.block-container {
-  background-color: #181a1b;
-}
-
-h3.sectionTitle {
-  color: rgb(227, 227, 227);
-}
-
-.header {
-  color: rgb(220, 220, 220);
-}
-
-span.phone-number {
-  color: rgb(200, 200, 200);
-}
-
-.internalSubheader {
-  color: rgb(180, 180, 180);
-}
-
-.no-devices.ng-star-inserted {
-  color: rgb(180, 180, 180);
-}
-
-.subheader.ng-star-inserted {
-  color: rgb(180, 180, 180);
-}
-
-.mat-slide-toggle-bar.mat-slide-toggle-bar-no-side-margin {
-  background-color: rgb(95 95 95);
-}
-
-.gvHighContrast
-  .mat-slide-toggle.mat-primary.mat-checked
-  .mat-slide-toggle-bar {
-  background-color: rgba(0, 121, 107, 0.54);
-}
-
-.device-label {
-  color: rgb(220, 220, 220);
-}
-
-div#LABEL_IDS\.ANONYMOUS_HEADER {
-  color: rgb(220, 220, 220);
-}
-
-.deviceLabel {
-  color: rgb(220, 220, 220);
-}
-
-.internalHeader {
-  color: rgb(220, 220, 220);
-}
-
-.mat-form-field-appearance-outline[_ngcontent-egk-c24] .mat-form-field-infix {
-  padding-top: 11px;
+p.gmat-body-2 {
+  color: $foreground;
 }
 
 .mat-select-arrow {
@@ -176,32 +331,139 @@ div#LABEL_IDS\.ANONYMOUS_HEADER {
   border-top-color: initial;
 }
 
-path[d="M10 17l5-5-5-5v10z"] {
-  color: rgb(213, 213, 213);
+div#mat-select-value-1 {
+  color: $foreground;
+}
+
+/* =========================
+   Contacts sidebar (gv-contact-list)
+   + scrollbar (missing in darkplus)
+   ========================= */
+
+gv-contact-list.YYoZ8c-npMLoc {
+  background-color: $background;
+}
+
+/* Scroll container targets */
+gv-contact-list #contact-list.root,
+gv-contact-list section.root,
+gv-contact-list {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: $selection $background;
+
+  /* In case the app sets overflow on the host */
+  overflow-y: auto !important;
+}
+
+/* WebKit scrollbar */
+gv-contact-list #contact-list.root::-webkit-scrollbar,
+gv-contact-list section.root::-webkit-scrollbar,
+gv-contact-list::-webkit-scrollbar {
+  width: 12px;
+}
+
+gv-contact-list #contact-list.root::-webkit-scrollbar-thumb,
+gv-contact-list section.root::-webkit-scrollbar-thumb,
+gv-contact-list::-webkit-scrollbar-thumb {
+  background: $selection;
+  border-radius: 8px;
+}
+
+gv-contact-list #contact-list.root::-webkit-scrollbar-track,
+gv-contact-list section.root::-webkit-scrollbar-track,
+gv-contact-list::-webkit-scrollbar-track {
+  background: $background;
+}
+
+/* =========================
+   Row / text color polish
+   ========================= */
+
+/* Group headers */
+gv-contact-list .group-title {
+  color: $foreground !important;
+  opacity: 0.9;
+}
+
+/* Contact name + details */
+gv-contact-list .name,
+gv-contact-list .details,
+gv-contact-list .phone-number,
+gv-contact-list .phone-type {
+  color: $foreground !important;
+}
+
+/* Hover to match the other sidebar feel */
+gv-contact-list gv-contact-item button.container.row:hover {
+  background: $selection !important;
+}
+
+/* Optional: make bullets a bit softer */
+gv-contact-list .bullet {
+  color: $foreground !important;
+  opacity: 0.6;
+}
+
+.YYoZ8c-VeKiLd .YYoZ8c-NkdnBe:not([disabled]) {
+  background-color: $primary;
+}
+
+/* =========================
+   Settings view fixes start here
+   ========================= */
+
+.layout-row > md-content {
+  background-color: $background;
+}
+
+.gvPageRoot .W3hWSd span[role="heading"] {
+  color: $foreground;
+}
+
+div.block-container {
+  background-color: $panel;
+}
+
+h3.sectionTitle {
+  color: $foreground;
+}
+
+.header {
+  color: $foreground;
+}
+
+span.phone-number {
+  color: $muted;
+}
+
+.internalSubheader,
+.no-devices.ng-star-inserted,
+.subheader.ng-star-inserted {
+  color: $muted;
+}
+
+.device-label,
+div#LABEL_IDS\.ANONYMOUS_HEADER,
+.deviceLabel,
+.internalHeader,
+.name,
+.mat-list-item-content {
+  color: $foreground;
 }
 
 .notificationText.ng-star-inserted {
-  color: rgb(200, 200, 200);
-}
-
-.name {
-  color: rgb(220, 220, 220);
+  color: $muted;
 }
 
 button.mat-focus-indicator.mat-stroked-button.mat-button-base.ng-star-inserted {
-  color: #00e1d6;
+  color: $active;
 }
 
-.active-title {
-  color: #009186;
-}
-
-span.metadata {
-  color: #009186;
-}
-
+.active-title,
+span.metadata,
 .creditSubheader {
-  color: #009186;
+  color: $active;
 }
 
 mat-icon.icon.mat-icon.notranslate.mat-icon-no-color {
@@ -209,11 +471,7 @@ mat-icon.icon.mat-icon.notranslate.mat-icon-no-color {
 }
 
 .icon {
-  background-color: #063331;
-}
-
-.mat-list-item-content {
-  color: rgb(220, 220, 220);
+  background-color: $icon-bg;
 }
 
 button.mat-focus-indicator.mat-stroked-button.mat-button-base {
@@ -221,11 +479,12 @@ button.mat-focus-indicator.mat-stroked-button.mat-button-base {
 }
 
 a.mat-list-item.gmat-nav-list-item.gmat-subtitle-2.gmat-list-item-active {
-  background-color: #1a1d1e;
+  background-color: $hover;
 }
 
-div#mat-select-value-1 {
-  color: rgb(220, 220, 220);
+/* Form field spacing (leave as-is, just grouped) */
+.mat-form-field-appearance-outline[_ngcontent-egk-c24] .mat-form-field-infix {
+  padding-top: 11px;
 }
 
 .mat-form-field-infix {
@@ -233,12 +492,25 @@ div#mat-select-value-1 {
   border-top: initial;
 }
 
+.mat-slide-toggle-bar.mat-slide-toggle-bar-no-side-margin {
+  background-color: rgba($foreground, 0.35);
+}
+
+.gvHighContrast
+  .mat-slide-toggle.mat-primary.mat-checked
+  .mat-slide-toggle-bar {
+  background-color: rgba($primary, 0.54);
+}
+
+/* =========================
+   Dial pad + input area
+   ========================= */
+
 div[ng-class="ctrl.dialpadVisible ? '' : ctrl.CSS.DIALPAD_COLLAPSED"] {
-  background-color: #131516;
+  background-color: $background;
 }
 
 /* Fixes for light-colored dial pad */
-
 .dialpad-container {
   background-color: $background;
 }
@@ -246,6 +518,7 @@ div[ng-class="ctrl.dialpadVisible ? '' : ctrl.CSS.DIALPAD_COLLAPSED"] {
 .input-row {
   background-color: $background;
   color: $foreground;
+  gap: 0.5rem;
 }
 
 .mat-ripple.button {
@@ -261,10 +534,7 @@ div[ng-class="ctrl.dialpadVisible ? '' : ctrl.CSS.DIALPAD_COLLAPSED"] {
   background-color: $secondary;
 }
 
-.active-call {
-  background-color: $background;
-}
-
+.active-call,
 .active-call-wrapper {
   background-color: $background;
 }
@@ -283,18 +553,27 @@ div[ng-class="ctrl.dialpadVisible ? '' : ctrl.CSS.DIALPAD_COLLAPSED"] {
   color: $foreground;
 }
 
-/* Make unread texts a bit more obvious */
-
-.gmat-subtitle-2.gvThreadItem-unread {
-  font-weight: bold;
-  background-color: $secondary;
-}
-
 /* Dial-Pad Button Styling Fixes */
 span.mat-mdc-button-persistent-ripple.mdc-button__ripple {
-  background-color: rgba(24, 24, 24, 0.74);
+  background-color: rgba($background, 0.88);
 }
 
 span.mdc-button__label {
   color: $foreground;
+}
+
+.gvPageRoot[_nghost-ng-c2279346182] .container[_ngcontent-ng-c2279346182]:focus,
+.gvPageRoot
+  [_nghost-ng-c2279346182]
+  .container[_ngcontent-ng-c2279346182]:focus,
+.gvPageRoot[_nghost-ng-c2279346182] .container[_ngcontent-ng-c2279346182]:hover,
+.gvPageRoot
+  [_nghost-ng-c2279346182]
+  .container[_ngcontent-ng-c2279346182]:hover,
+.gvPageRoot[_nghost-ng-c2279346182]
+  .container.hovering[_ngcontent-ng-c2279346182],
+.gvPageRoot
+  [_nghost-ng-c2279346182]
+  .container.hovering[_ngcontent-ng-c2279346182] {
+  background-color: $selection;
 }

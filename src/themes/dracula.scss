@@ -1,3 +1,5 @@
+//dracula.scss
+
 /* Color palette */
 $background: #282a36;
 $foreground: #f8f8f2;
@@ -202,7 +204,7 @@ button.mdc-button.mat-mdc-button-base.button.mat-mdc-button.mat-unthemed {
 }
 
 .cdk-virtual-scroll-viewport.list-viewport::-webkit-scrollbar-track {
-  background: #131516;
+  background: $background;
 }
 
 //NOTE Scrollbar in dial pad area
@@ -217,7 +219,7 @@ gv-contact-list section.root,
 gv-contact-list {
   /* Firefox */
   scrollbar-width: thin;
-  scrollbar-color: $selection #131516;
+  scrollbar-color: $selection $background;
 
   /* In case the app sets overflow on the host */
   overflow-y: auto !important;
@@ -240,7 +242,7 @@ gv-contact-list::-webkit-scrollbar-thumb {
 gv-contact-list #contact-list.root::-webkit-scrollbar-track,
 gv-contact-list section.root::-webkit-scrollbar-track,
 gv-contact-list::-webkit-scrollbar-track {
-  background: #131516;
+  background: $background;
 }
 
 /* =========================

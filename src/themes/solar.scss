@@ -6,9 +6,290 @@ $primary: #2aa198;
 $secondary: #b58900;
 $selection: #839496;
 
+// Extra theme helpers (kept lightweight + palette-based)
+$border: rgba($foreground, 0.12);
+$active: $primary;
+$unread-bg: darken($background, 4%);
+
 @import "base";
+
+%side-nav {
+  border-right: 1px solid $border;
+}
 
 /** Hacky border color fix for conversation list */
 %conversation > div {
-  border-color: $foreground;
+  border-color: $border;
+}
+
+/* Dial-Pad Button Styling Fixes */
+//left sidebar icons
+a.gb_de.gb_Vc {
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  background-color: $selection;
+}
+
+span.mat-mdc-list-item-unscoped-content.mdc-list-item__primary-text {
+  color: $foreground;
+}
+
+a.mat-mdc-list-item.mdc-list-item.mat-mdc-tooltip-trigger.navListItem.mat-mdc-list-item-interactive.mat-mdc-list-item-single-line.mdc-list-item--with-one-line.ng-star-inserted.mdc-list-item--activated,
+//if hovered
+a.mat-mdc-list-item.mdc-list-item.mat-mdc-tooltip-trigger.navListItem.mat-mdc-list-item-interactive.mat-mdc-list-item-single-line.mdc-list-item--with-one-line.ng-star-inserted:hover {
+  background-color: $selection;
+}
+
+.mat-ripple.container.read.ng-star-inserted.active,
+//if hovered
+.mat-ripple.container.read.ng-star-inserted:hover {
+  background-color: $selection;
+}
+
+.gvPageRoot[_nghost-ng-c1542851374] .title[_ngcontent-ng-c1542851374],
+.gvPageRoot [_nghost-ng-c1542851374] .title[_ngcontent-ng-c1542851374] {
+  color: $foreground;
+}
+
+span.mat-mdc-button-persistent-ripple.mdc-button__ripple {
+  background-color: rgba($background, 0.925);
+}
+
+.input-row.ng-tns-c2117285075-2 {
+  color: $foreground;
+  background-color: rgba($background, 0.925);
+}
+
+input#il1 {
+  color: $foreground;
+  background-color: $background;
+  border-radius: 0.5rem;
+  //padding left/right ie x
+  padding: 0 0.5rem;
+
+  //   placeholder text color
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+button.mdc-button.mat-mdc-button-base.call-button.ng-tns-c2117285075-2.mat-mdc-button.mat-primary.mat-mdc-button-disabled {
+  color: $foreground;
+}
+
+.input-row {
+  gap: 0.5rem;
+}
+
+span.mdc-button__label {
+  color: $foreground;
+}
+
+div {
+  color: $foreground;
+}
+
+.dialpad-container {
+  background-color: $background;
+}
+
+button.mdc-button.mat-mdc-button-base.button.mat-mdc-button.mat-unthemed {
+  border: 1px solid $foreground;
+  margin: 0.25rem;
+}
+
+//NOTE Sidebar / thread list base
+
+/* Whole left sidebar scroll area */
+.cdk-virtual-scroll-viewport.list-viewport {
+  background: $background !important; // sidebar bg
+  color: $foreground !important; // default text
+}
+
+/* The <ol> containing rows */
+.cdk-virtual-scroll-viewport.list-viewport ol.list {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Each thread row container (clickable card) */
+.cdk-virtual-scroll-viewport.list-viewport li.list-item .mat-ripple.container {
+  background: transparent !important;
+  border-bottom: 1px solid $border !important;
+  color: $foreground !important;
+  -webkit-text-fill-color: $foreground !important; // Google sometimes uses fill-color
+}
+
+/* Hover state */
+.cdk-virtual-scroll-viewport.list-viewport
+  li.list-item
+  .mat-ripple.container:hover {
+  background: $background !important;
+}
+
+/* Active / selected thread */
+.cdk-virtual-scroll-viewport.list-viewport
+  li.list-item
+  .mat-ripple.container.active {
+  background: $selection !important;
+  border-left: 3px solid $active !important;
+}
+
+/* Unread emphasis (if present) */
+.cdk-virtual-scroll-viewport.list-viewport
+  li.list-item
+  .mat-ripple.container.unread {
+  background: $unread-bg !important;
+  font-weight: 600 !important;
+}
+
+//NOTE Messages Section
+
+.details-container {
+  background-color: $selection;
+}
+
+//NOTE ext inside rows
+
+.cdk-virtual-scroll-viewport.list-viewport .thread-details,
+.cdk-virtual-scroll-viewport.list-viewport .thread-details * {
+  color: $foreground !important;
+  -webkit-text-fill-color: $foreground !important;
+}
+
+/* Names / participants */
+.cdk-virtual-scroll-viewport.list-viewport .participants {
+  color: $foreground !important;
+  -webkit-text-fill-color: $foreground !important;
+}
+
+/* Subtitle / call status line */
+.cdk-virtual-scroll-viewport.list-viewport .subtitle {
+  color: rgba($foreground, 0.75) !important;
+  -webkit-text-fill-color: rgba($foreground, 0.75) !important;
+}
+
+/* Timestamp */
+.cdk-virtual-scroll-viewport.list-viewport .timestamp {
+  color: rgba($foreground, 0.6) !important;
+  -webkit-text-fill-color: rgba($foreground, 0.6) !important;
+}
+
+/* =========================
+   Icons in rows
+   ========================= */
+
+/* Call direction icons, phone icon, etc. */
+.cdk-virtual-scroll-viewport.list-viewport mat-icon,
+.cdk-virtual-scroll-viewport.list-viewport mat-icon svg {
+  color: $foreground !important;
+  fill: currentColor !important;
+}
+
+/* Action button (phone) hover */
+.cdk-virtual-scroll-viewport.list-viewport .call-button:hover mat-icon,
+.cdk-virtual-scroll-viewport.list-viewport .call-button:hover mat-icon svg {
+  color: $active !important;
+  fill: $active !important;
+}
+
+/* =========================
+   Scrollbar (optional)
+   ========================= */
+
+.cdk-virtual-scroll-viewport.list-viewport::-webkit-scrollbar {
+  width: 12px;
+}
+
+.cdk-virtual-scroll-viewport.list-viewport::-webkit-scrollbar-thumb {
+  background: $selection;
+  border-radius: 8px;
+}
+
+.cdk-virtual-scroll-viewport.list-viewport::-webkit-scrollbar-track {
+  background: $background;
+}
+
+//NOTE Scrollbar in dial pad area
+/* =========================
+   Contacts sidebar (gv-contact-list)
+   Match list-viewport look
+   ========================= */
+
+/* Scroll container targets */
+gv-contact-list #contact-list.root,
+gv-contact-list section.root,
+gv-contact-list {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: $selection $background;
+
+  /* In case the app sets overflow on the host */
+  overflow-y: auto !important;
+}
+
+/* WebKit scrollbar */
+gv-contact-list #contact-list.root::-webkit-scrollbar,
+gv-contact-list section.root::-webkit-scrollbar,
+gv-contact-list::-webkit-scrollbar {
+  width: 12px;
+}
+
+gv-contact-list #contact-list.root::-webkit-scrollbar-thumb,
+gv-contact-list section.root::-webkit-scrollbar-thumb,
+gv-contact-list::-webkit-scrollbar-thumb {
+  background: $selection;
+  border-radius: 8px;
+}
+
+gv-contact-list #contact-list.root::-webkit-scrollbar-track,
+gv-contact-list section.root::-webkit-scrollbar-track,
+gv-contact-list::-webkit-scrollbar-track {
+  background: $background;
+}
+
+/* =========================
+   Row / text color polish
+   ========================= */
+
+/* Group headers */
+gv-contact-list .group-title {
+  color: $foreground !important;
+  opacity: 0.9;
+}
+
+/* Contact name + details */
+gv-contact-list .name,
+gv-contact-list .details,
+gv-contact-list .phone-number,
+gv-contact-list .phone-type {
+  color: $foreground !important;
+}
+
+/* Hover to match the other sidebar feel */
+gv-contact-list gv-contact-item button.container.row:hover {
+  background: $selection !important;
+}
+
+/* Optional: make bullets a bit softer */
+gv-contact-list .bullet {
+  color: $foreground !important;
+  opacity: 0.6;
+}
+
+.gvPageRoot[_nghost-ng-c2279346182] .container[_ngcontent-ng-c2279346182]:focus,
+.gvPageRoot
+  [_nghost-ng-c2279346182]
+  .container[_ngcontent-ng-c2279346182]:focus,
+.gvPageRoot[_nghost-ng-c2279346182] .container[_ngcontent-ng-c2279346182]:hover,
+.gvPageRoot
+  [_nghost-ng-c2279346182]
+  .container[_ngcontent-ng-c2279346182]:hover,
+.gvPageRoot[_nghost-ng-c2279346182]
+  .container.hovering[_ngcontent-ng-c2279346182],
+.gvPageRoot
+  [_nghost-ng-c2279346182]
+  .container.hovering[_ngcontent-ng-c2279346182] {
+  background-color: $selection;
 }
