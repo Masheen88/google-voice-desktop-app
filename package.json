@@ -24,7 +24,15 @@
         "AppImage"
       ],
       "category": "Office"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Masheen88",
+        "repo": "google-voice-desktop-app",
+        "releaseType": "draft"
+      }
+    ]
   },
   "scripts": {
     "start": "electron .",
