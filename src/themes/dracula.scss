@@ -271,3 +271,19 @@ gv-contact-list .bullet {
   color: $foreground !important;
   opacity: 0.6;
 }
+
+.gvPageRoot[_nghost-ng-c2279346182] .container[_ngcontent-ng-c2279346182]:focus,
+.gvPageRoot
+  [_nghost-ng-c2279346182]
+  .container[_ngcontent-ng-c2279346182]:focus,
+.gvPageRoot[_nghost-ng-c2279346182] .container[_ngcontent-ng-c2279346182]:hover,
+.gvPageRoot
+  [_nghost-ng-c2279346182]
+  .container[_ngcontent-ng-c2279346182]:hover,
+.gvPageRoot[_nghost-ng-c2279346182]
+  .container.hovering[_ngcontent-ng-c2279346182],
+.gvPageRoot
+  [_nghost-ng-c2279346182]
+  .container.hovering[_ngcontent-ng-c2279346182] {
+  background-color: $selection;
+}
