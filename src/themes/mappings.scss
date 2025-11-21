@@ -4,35 +4,34 @@
  * They roughly correlate to components on the page. See THEMES.md for more details on these components
  */
 
-
 /* Navbar */
 header {
-    @extend %navbar;
+  @extend %navbar;
 }
 
-header [title='Google Voice'] > span {
-    @extend %navbar-title;
+header [title="Google Voice"] > span {
+  @extend %navbar-title;
 }
 
-header form[role='search'] {
-    @extend %navbar-search;
+header form[role="search"] {
+  @extend %navbar-search;
 }
 
 /* Side Nav */
 gv-side-nav {
-    @extend %side-nav;
+  @extend %side-nav;
 }
 
 gmat-nav-list .navListItem {
-    @extend %side-nav-item;
+  @extend %side-nav-item;
 }
 
 gv-side-nav a.navListItem.gmat-list-item-active {
-    @extend %side-nav-item-active;
+  @extend %side-nav-item-active;
 }
 
-[role='tablist']:not(.expanded) .navItemBadge {
-    @extend %side-nav-item-badge;
+[role="tablist"]:not(.expanded) .navItemBadge {
+  @extend %side-nav-item-badge;
 }
 
 /* Conversation */
@@ -40,50 +39,52 @@ gv-message-list,
 gv-voicemail-player md-content,
 gv-inbox-summary-ng2,
 gv-thread-details,
-gv-messaging-view md-content { // Message view when clicking someones name after search
-    @extend %conversation;
+gv-messaging-view md-content {
+  // Message view when clicking someones name after search
+  @extend %conversation;
 }
 
 gv-message-list-header > div {
-    @extend %conversation-header;
+  @extend %conversation-header;
 }
 
-gv-message-list-header [gv-test-id='conversation-title'],
-gv-message-list-header [gv-test-id='conversation-subtitle'],
-[aria-label='Group message'] {
-    @extend %conversation-title;
+gv-message-list-header [gv-test-id="conversation-title"],
+gv-message-list-header [gv-test-id="conversation-subtitle"],
+[aria-label="Group message"] {
+  @extend %conversation-title;
 }
 
 gv-inbox-summary-ng2 .gv-inbox-summary .greeting,
 gv-inbox-summary-ng2 .gv-inbox-summary .status {
-    @extend %conversation-summary;
+  @extend %conversation-summary;
 }
 
 gv-message-entry > div {
-    @extend %conversation-footer;
+  @extend %conversation-footer;
 }
 
-gv-message-item [layout-align='start start'] [gv-test-id='bubble'] {
-    @extend %conversation-message-recieved;
+gv-message-item [layout-align="start start"] [gv-test-id="bubble"] {
+  @extend %conversation-message-recieved;
 }
 
-gv-message-item [layout-align='start end'] [gv-test-id='bubble'] {
-    @extend %conversation-message-sent;
+gv-message-item [layout-align="start end"] [gv-test-id="bubble"] {
+  @extend %conversation-message-sent;
 }
 
-[gv-test-id='sms-sender-time-stamp'] {
-    @extend %conversation-timestamp;
+[gv-test-id="sms-sender-time-stamp"] {
+  @extend %conversation-timestamp;
 }
 
 gv-message-item gv-annotation a {
-    @extend %conversation-link;
+  @extend %conversation-link;
 }
 
 /** Lists */
 gv-conversation-list, // messages list
 #contact-list, // All contacts list on right
-body > [role='listbox'] { // List box for the contact search
-    @extend %list;
+body > [role='listbox'] {
+  // List box for the contact search
+  @extend %list;
 }
 
 gv-thread-item > div,
@@ -96,11 +97,11 @@ gv-make-call-panel-ng2 > div > div:nth-child(2), // Call panel enter a name or n
 gv-contact-item > div,
 gv-contact-card,
 gv-frequent-contact-card > div {
-    @extend %list-item;
+  @extend %list-item;
 }
 
-gv-thread-item > div.layout-row[aria-selected='true'] {
-    @extend %list-item-active;
+gv-thread-item > div.layout-row[aria-selected="true"] {
+  @extend %list-item-active;
 }
 
 gv-thread-item div.layout-row gv-annotation[gv-test-id='item-contact'],
@@ -117,7 +118,7 @@ gv-contact-item  div gv-annotation, // All contacts heading on right
 gv-contact-card .gmat-body-2 div:first-child div:nth-child(2), // Contact card name after clicking on someones name in the search bar
 gv-recent-search-item gv-annotation,
 gv-call-log-item .primaryText {
-    @extend %list-item-heading;
+  @extend %list-item-heading;
 }
 
 gv-thread-item-detail :first-child,
@@ -127,21 +128,73 @@ gv-contact-card .gmat-body-2 > div > div:nth-child(3), // Contact card phone num
 gv-contact-item > button > div > div:nth-child(2),// Phone number under all contacts on right
 gv-contact-item > div > div > div:nth-child(2) // Phone number under search
 {
-    @extend %list-item-detail;
+  @extend %list-item-detail;
 }
 
 /* Dial pad */
 gv-dialpad > div {
-    @extend %dial-pad;
+  @extend %dial-pad;
 }
 
-gv-dialpad [role='gridcell'] > div,
-gv-dialpad [role='gridcell'] .gmat-caption {
-    @extend %dial-pad-button;
+gv-dialpad [role="gridcell"] > div,
+gv-dialpad [role="gridcell"] .gmat-caption {
+  @extend %dial-pad-button;
 }
 
 gv-dialpad-toggle button {
-    @extend %dial-pad-toggle;
+  @extend %dial-pad-toggle;
 }
 
+/* ==========================================================================
+   New Call / Call-As Banner / Right-panel Contacts (updated DOM)
+   These selectors match current GV markup (number-display, contacts, container row buttons).
+   ========================================================================== */
 
+/* Call-as banner + nested white surfaces */
+gv-call-as-banner,
+gv-call-as-banner .number-display,
+gv-call-as-banner .accountPhoneBanner,
+gv-call-as-select .root,
+gv-call-as-select .did-display,
+gv-call-as-select .current-number-description,
+gv-call-as-select .anonymous-caller-id-banner {
+  @extend %dial-pad; // solid themed surface instead of transparent
+}
+
+gv-call-as-select .call-as-label,
+gv-call-as-select .phone-number-details,
+gv-call-as-select .anonymous-caller-id-banner,
+gv-call-as-select .anonymous-caller-id-banner > div {
+  @extend %list-item-heading;
+}
+
+gv-call-as-select .disable-anonymous-button {
+  @extend %list-item;
+}
+
+/* Right-panel contacts list wrapper (new class = "contacts") */
+gv-contact-list.contacts,
+gv-contact-list.contacts #contact-list,
+gv-contact-list.contacts #contact-list.root {
+  @extend %list;
+}
+
+/* Contact rows are now buttons, not divs */
+gv-contact-item button.container.row {
+  @extend %list-item;
+}
+
+gv-contact-item button.container.row[aria-selected="true"] {
+  @extend %list-item-active;
+}
+
+gv-contact-item button.container.row .name,
+gv-contact-item button.container.row gv-annotation.name,
+gv-contact-item button.container.row .phone-number {
+  @extend %list-item-heading;
+}
+
+gv-contact-item button.container.row .details,
+gv-contact-item button.container.row .phone-type {
+  @extend %list-item-detail;
+}

@@ -1,16 +1,14 @@
-
 /* Color Palette */
 
 $background: #002b36;
 $foreground: white;
 $primary: #2aa198;
-$secondary: #b58900 ;
+$secondary: #b58900;
 $selection: #839496;
 
-
-@use 'base';
+@import "base";
 
 /** Hacky border color fix for conversation list */
 %conversation > div {
-    border-color: $foreground;
+  border-color: $foreground;
 }

@@ -3,46 +3,45 @@
 /* Navbar */
 %navbar,
 %navbar-search {
-    background-color: $background;
+  background-color: $background;
 }
 
 %navbar-title,
 %navbar input,
 %navbar input::placeholder,
 %navbar svg,
-%navbar-search svg  /* Check if needed */{
-    color: $foreground;
+%navbar-search svg  /* Check if needed */ {
+  color: $foreground;
 }
 
 /** Side Nav */
 %side-nav {
-    background-color: $background;
+  background-color: $background;
 }
 
 %side-nav-item,
 %side-nav-item svg {
-    color: $foreground;
+  color: $foreground;
 }
 
 %side-nav-item-active {
-    background-color: $selection;
+  background-color: $selection;
 }
 
 %side-nav-item-active svg {
-    color: $foreground;
+  color: $foreground;
 }
 
 %side-nav-item-badge {
-    background-color: $primary;
+  background-color: $primary;
 }
 
 /* Conversation */
 %conversation,
 %conversation-header,
-%conversation-footer
-{
-    color: $foreground;
-    background-color: $background;
+%conversation-footer {
+  color: $foreground;
+  background-color: $background;
 }
 
 %conversation-title,
@@ -50,87 +49,87 @@
 %conversation-footer textarea::placeholder,
 %conversation-footer svg,
 %conversation-header svg {
-    color: $foreground;
+  color: $foreground;
 }
 
 %conversation-link {
-    background: inherit;
-    color: inherit;
+  background: inherit;
+  color: inherit;
 }
 
 %conversation-footer textarea::placeholder {
-    opacity: .5;
+  opacity: 0.5;
 }
 
 %conversation-message-recieved,
 %conversation-message-sent {
-    color: $foreground;
-    border-radius: 2rem;
+  color: $foreground;
+  border-radius: 2rem;
 }
 
 %conversation-message-recieved {
-    background-color: $secondary;
+  background-color: $secondary;
 }
 
 %conversation-message-sent {
-    background-color: $primary;
+  background-color: $primary;
 }
 
 %conversation-summary,
 %conversation-timestamp {
-    color: $foreground;
+  color: $foreground;
 }
 
 /* Lists */
 %list {
-    background-color: $background;
+  background-color: $background;
 }
 
 %list-item {
-    background-color: $background;
-    color: $foreground;
+  background-color: $background;
+  color: $foreground;
 }
 
 %list-item svg {
-    color: $foreground;
+  color: $foreground;
 }
 
 %list-item-active,
 %list-item:hover {
-    background-color: $selection;
+  background-color: $selection;
 }
 
 %list-item-heading,
 %list-item-heading input,
 %list-item-heading input::placeholder {
-    color: $foreground;
+  color: $foreground;
 }
 
 %list-item-detail {
-    color: $foreground;
-    opacity: .6;
+  color: $foreground;
+  opacity: 0.6;
 }
 
 /* Dial pad */
 %dial-pad {
-    background-color: $background;
+  background-color: $background;
 }
 
 %dial-pad-button {
-    color: $foreground;
+  color: $foreground;
 }
 
 %dial-pad-button:hover {
-    background-color: $selection;
+  background-color: $selection;
 }
 
 %dial-pad-toggle {
-    background-color: $background;
-    color: $foreground;
+  background-color: $background;
+  color: $foreground;
 }
 
 %dial-pad-toggle svg {
-    color: $foreground;
+  color: $foreground;
 }
 
-@use 'mappings';
+@import "mappings";

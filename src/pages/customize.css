@@ -15,18 +15,190 @@
   -------------------------------------
 ***************************************************************************************************/
 .dialog-grid {
-    display:               grid;
-    grid-template-rows:    auto min-content;
-    grid-template-columns: auto;
-    height:                100vh;
-    padding:               20px;
+  display: grid;
+  grid-template-rows: auto min-content;
+  grid-template-columns: auto;
+  height: 100vh;
+  padding: 20px;
+
+  /* Theme surface styling (doesn't change layout) */
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 10px;
 }
 
 /*Give checkboxes a slightly larger size that normal.*/
-input[type=checkbox] {
-    width:    20px;
-    height:   20px;
-    display:  inline-block;
-    position: relative;
-    top:      5px;
+input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  position: relative;
+  top: 5px;
+
+  /* Theme accent */
+  accent-color: var(--primary);
+}
+
+/* =================================================================================================
+   Theme Palettes (CSS variables)
+   The JS sets: <html data-theme="default|dracula|solar|minty|cerulean|darkplus">
+   We swap colors here so the Settings window matches the app theme.
+================================================================================================= */
+
+/* Default */
+html,
+html[data-theme="default"] {
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --surface: #f5f7fa;
+  --border: #ced4da;
+
+  --primary: #0d6efd;
+  --secondary: #6c757d;
+  --muted: #6c757d;
+
+  --input-bg: #ffffff;
+  --input-fg: #1f2328;
+
+  --selection: #0d6efd;
+}
+
+/* Dracula */
+html[data-theme="dracula"] {
+  --bg: #282a36;
+  --fg: #f8f8f2;
+  --surface: #303241;
+  --border: #44475a;
+
+  --primary: #bd93f9;
+  --secondary: #ffb86c;
+  --muted: #a4a6b3;
+
+  --input-bg: #2f3140;
+  --input-fg: #f8f8f2;
+
+  --selection: #44475a;
+}
+
+/* Solar (matches your solar.scss) */
+html[data-theme="solar"] {
+  --bg: #002b36;
+  --fg: #ffffff;
+  --primary: #2aa198;
+  --secondary: #b58900;
+  --selection: #839496;
+
+  --surface: #01323e;
+  --border: #0a3f4d;
+
+  --muted: #839496;
+  --input-bg: #073642;
+  --input-fg: #ffffff;
+}
+
+/* Minty (Bootswatch-ish) */
+html[data-theme="minty"] {
+  --bg: #f8f9fa;
+  --fg: #212529;
+  --surface: #ffffff;
+  --border: #dfe3e6;
+
+  --primary: #78c2ad;
+  --secondary: #f3969a;
+  --muted: #6c757d;
+
+  --input-bg: #ffffff;
+  --input-fg: #212529;
+
+  --selection: #78c2ad;
+}
+
+/* Cerulean (Bootswatch-ish) */
+html[data-theme="cerulean"] {
+  --bg: #ffffff;
+  --fg: #2c3e50;
+  --surface: #f7f9fb;
+  --border: #dfe6ee;
+
+  --primary: #2fa4e7;
+  --secondary: #e9ecef;
+  --muted: #6c757d;
+
+  --input-bg: #ffffff;
+  --input-fg: #2c3e50;
+
+  --selection: #2fa4e7;
+}
+
+/* DarkPlus (VS Code Dark+ vibe) */
+html[data-theme="darkplus"] {
+  --bg: #1e1e1e;
+  --fg: #d4d4d4;
+  --surface: #252526;
+  --border: #3a3d41;
+
+  --primary: #0e639c;
+  --secondary: #3a3d41;
+  --muted: #9da2a6;
+
+  --input-bg: #252526;
+  --input-fg: #d4d4d4;
+
+  --selection: #264f78;
+}
+
+/* =================================================================================================
+   Apply variables to the page + Bootstrap overrides
+================================================================================================= */
+
+html,
+body {
+  height: 100%;
+  background: var(--bg) !important;
+  color: var(--fg) !important;
+}
+
+/* Labels / text */
+label,
+.form-check-label,
+.font-weight-bold {
+  color: var(--fg) !important;
+}
+
+/* Inputs, selects, sliders */
+.form-control,
+select.form-control,
+input.form-control {
+  background: var(--input-bg) !important;
+  color: var(--input-fg) !important;
+  border-color: var(--border) !important;
+}
+
+/* Focus */
+.form-control:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent) !important;
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #fff !important;
+}
+
+.btn-secondary {
+  background-color: var(--secondary) !important;
+  border-color: var(--secondary) !important;
+  color: #fff !important;
+}
+
+/* Minor spacing polish (visual only) */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+#second-row {
+  margin-top: 8px;
 }
