@@ -35,7 +35,9 @@
     "build:linux": "electron-builder --linux",
     "build:x64": "electron-builder --mac --windows --linux --x64",
     "build:arm64": "electron-builder --mac --windows --linux --arm64",
-    "release": "electron-builder --mac --windows --linux --x64 --arm64 --publish always"
+    "release:windows": "dotenv electron-builder --win --x64 --publish always",
+    "release:linux": "electron-builder --linux --x64 --publish always",
+    "release": "electron-builder --windows --linux --x64 --arm64 --publish always"
   },
   "keywords": [
     "electron",
@@ -53,6 +55,7 @@
     "sass": "^1.94.2"
   },
   "devDependencies": {
+    "dotenv-cli": "^11.0.0",
     "electron": "^39.2.3",
     "electron-builder": "^26.0.12",
     "electronmon": "^2.0.4"
