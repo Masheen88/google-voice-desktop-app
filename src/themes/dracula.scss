@@ -10,12 +10,12 @@ $selection: #44475a;
 @import "base";
 
 %side-nav {
-  border-right: 1px solid $foreground;
+  border-right: 1px solid $selection;
 }
 
 /** Hacky border color fix for conversation list */
 %conversation > div {
-  border-color: $foreground;
+  border-color: $selection;
 }
 
 /* Dial-Pad Button Styling Fixes */
@@ -73,10 +73,6 @@ button.mdc-button.mat-mdc-button-base.call-button.ng-tns-c2117285075-2.mat-mdc-b
   color: $foreground;
 }
 
-.input-row {
-  gap: 0.5rem;
-}
-
 span.mdc-button__label {
   color: $foreground;
 }
@@ -129,7 +125,7 @@ button.mdc-button.mat-mdc-button-base.button.mat-mdc-button.mat-unthemed {
   li.list-item
   .mat-ripple.container.active {
   background: $selection !important;
-  border-left: 3px solid #30a99b !important;
+  border-left: 3px solid $selection !important;
 }
 
 /* Unread emphasis (if present) */
@@ -287,5 +283,116 @@ gv-contact-list .bullet {
 .gvPageRoot
   [_nghost-ng-c2279346182]
   .container.hovering[_ngcontent-ng-c2279346182] {
+  background-color: $selection;
+}
+
+/*googlge voice app - enter a or number bg, also need to set placeholder text/bg color*/
+.input-row {
+  background-color: $background;
+  gap: 0.5rem;
+}
+
+.group-title {
+  background-color: $selection;
+}
+
+.cdk-visually-hidden {
+  color: $foreground;
+}
+
+/* Make the dialer input background red */
+.input-row .input-container .input {
+  background-color: red !important;
+  color: #ffffff !important;
+  border-radius: 4px;
+}
+
+/* Optional: change placeholder color too */
+.input-row .input-container .input::placeholder {
+  background-color: $background;
+  color: #ffd5d5;
+}
+
+button.mdc-button.mat-mdc-button-base.call-button.mat-mdc-button.mat-primary.mat-mdc-button-disabled {
+  background-color: green;
+  color: $foreground;
+}
+
+//aria disabled false
+button.mdc-button.mat-mdc-button-base.call-button.ng-tns-c1668095682-2.mat-mdc-button.mat-primary[aria-disabled="true"] {
+  background-color: $selection;
+  color: $foreground;
+  border-radius: 2rem;
+  transition: all 0.5s ease-in-out;
+}
+
+button.mdc-button.mat-mdc-button-base.call-button.ng-tns-c1668095682-2.mat-mdc-button.mat-primary[aria-disabled="false"]
+  .mdc-button__label {
+  color: $foreground;
+  transition: all 0.5s ease-in-out;
+}
+
+button.mdc-button.mat-mdc-button-base.call-button.ng-tns-c1668095682-2.mat-mdc-button.mat-primary[aria-disabled="false"] {
+  background-color: $foreground;
+  border-radius: 2rem;
+  transition: all 0.5s ease-in-out;
+}
+
+/* navbasr bg */
+.gb_Sd.gb_1d.gb_Le.gb_Xe.gb_Ve.gb_0e {
+  background-color: $selection;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+/* avail dropdown */
+.full-panel.ng-star-inserted {
+  background: $selection;
+  color: $foreground;
+}
+
+.gvPageRoot[_nghost-ng-c2457234224] .title[_ngcontent-ng-c2457234224],
+.gvPageRoot [_nghost-ng-c2457234224] .title[_ngcontent-ng-c2457234224] {
+  color: $foreground;
+}
+
+.dnd-status.content-right {
+  $background: $selection !important;
+  color: red;
+}
+span#xap-auto-id-2 {
+  color: red;
+}
+
+.gvPageRoot[_nghost-ng-c1815221090] .dnd-status[_ngcontent-ng-c1815221090],
+.gvPageRoot [_nghost-ng-c1815221090] .dnd-status[_ngcontent-ng-c1815221090] {
+  background-color: #f1f3f4;
+}
+
+/* before and after
+.avatar-batch-selection-container
+*/
+
+.avatar-batch-selection-container::before {
+  background-color: $selection !important;
+}
+
+.avatar-batch-selection-container::after {
+  background-color: $selection !important;
+}
+
+.gvPageRoot[_nghost-ng-c1785828621] .container[_ngcontent-ng-c1785828621]:focus,
+.gvPageRoot
+  [_nghost-ng-c1785828621]
+  .container[_ngcontent-ng-c1785828621]:focus,
+.gvPageRoot[_nghost-ng-c1785828621] .container[_ngcontent-ng-c1785828621]:hover,
+.gvPageRoot
+  [_nghost-ng-c1785828621]
+  .container[_ngcontent-ng-c1785828621]:hover,
+.gvPageRoot[_nghost-ng-c1785828621]
+  .container.hovering[_ngcontent-ng-c1785828621],
+.gvPageRoot
+  [_nghost-ng-c1785828621]
+  .container.hovering[_ngcontent-ng-c1785828621] {
   background-color: $selection;
 }
