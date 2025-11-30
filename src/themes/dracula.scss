@@ -143,7 +143,6 @@ button.mdc-button.mat-mdc-button-base.button.mat-mdc-button.mat-unthemed {
 }
 
 //NOTE ext inside rows
-
 .cdk-virtual-scroll-viewport.list-viewport .thread-details,
 .cdk-virtual-scroll-viewport.list-viewport .thread-details * {
   color: #e3e3e3 !important;
@@ -395,4 +394,21 @@ span#xap-auto-id-2 {
   [_nghost-ng-c1785828621]
   .container.hovering[_ngcontent-ng-c1785828621] {
   background-color: $selection;
+}
+
+.subject-content-container.bubble {
+  background-color: $selection;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.subject-content-container.bubble:hover {
+  background-color: rgba(74, 71, 100);
+}
+
+.message-input-container {
+  background-color: $selection;
+}
+
+.container {
+  background-color: $background;
 }

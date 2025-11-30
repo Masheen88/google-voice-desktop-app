@@ -406,3 +406,12 @@ span[xapautoid].title.content {
   .container.hovering[_ngcontent-ng-c1785828621] {
   background-color: $selection;
 }
+
+.subject-content-container.bubble {
+  background-color: $selection;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.container {
+  background-color: $background;
+}
