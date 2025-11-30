@@ -34,6 +34,10 @@ You can change settings, apply themes and other things in the customization page
 
 ![Mac Settings](/screenshots/macSettings.png?raw=true)
 
+### **Linux Settings**
+
+Token stored in profile export GH_TOKEN="your_token_here"
+
 ### **System Tray Settings**
 
 ![System Tray Settings](/screenshots/systemTraySettings.png?raw=true)
