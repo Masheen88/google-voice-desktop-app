@@ -8,7 +8,6 @@ const {
   Tray,
   Menu,
   ipcMain,
-  BrowserView,
   shell,
   powerMonitor,
   systemPreferences,
@@ -27,21 +26,21 @@ const CSSInjector = require("./utils/cssInjector");
 const StoreModule = require("electron-store");
 const Store = StoreModule.default ?? StoreModule;
 
-const Url = require("node:url");
+const { pathToFileURL } = require("node:url");
+const { autoUpdater } = require("electron-updater");
 
 // Constants
 const store = new Store();
 const appPath = app.getAppPath();
-const REFRESH_RATE = 3000; // 3 seconds
 const icon = path.join(appPath, "images", constants.APPLICATION_ICON_MEDIUM);
 const iconTray = path.join(appPath, "images", constants.APPLICATION_ICON_SMALL);
 const iconTrayDirty = path.join(
   appPath,
   "images",
-  constants.APPLICATION_ICON_SMALL_WITH_INDICATOR
+  constants.APPLICATION_ICON_SMALL_WITH_INDICATOR,
 );
 const dockIcon = nativeImage.createFromPath(
-  path.join(appPath, "images", constants.APPLICATION_ICON_LARGE)
+  path.join(appPath, "images", constants.APPLICATION_ICON_LARGE),
 );
 const DEFAULT_WIDTH = 1200;
 const DEFAULT_HEIGHT = 900;
@@ -53,6 +52,7 @@ let cssInjector;
 let tray;
 let win; // The main application window
 let settingsWindow; // When not null, the "Settings" window, which is currently open
+let saveWindowSizeTimer = null; // Debounces rapid resize events before persisting bounds
 
 // Only one instance of the app should run
 if (!app.requestSingleInstanceLock()) {
@@ -63,34 +63,48 @@ app.on("second-instance", () => {
   showMainWindow();
 });
 
-// If the computer is shutting down or restarting then close
-powerMonitor.on("shutdown", () => {
-  exitApplication();
+// Track all quit paths, including operating-system quits and auto-updater installation quits.
+app.on("before-quit", () => {
+  app.isQuiting = true;
 });
 
-// Setup context menu
-contextMenu({
-  showSaveImage: true,
-  showInspectElement: true,
-});
+// Enforce Chromium's OS-level sandbox for renderer processes.
+// Both the Google Voice window and local Settings window use sandbox-compatible preload scripts.
+app.enableSandbox();
 
 // If we're running on Windows, set our Application User Model ID to our application name.
 // This will be displayed in all system Toasts that get generated to display notifications
 // to the user.  If we don't do this, "electron.app.Electron" will be displayed instead.
 if (isWindows()) {
-  app.setAppUserModelId(constants.APPLICATION_NAME);
+  app.setAppUserModelId(constants.APPLICATION_ID);
 }
 
-// Setup notification shim to focus window
-ipcMain.on("notification-clicked", () => {
+// Setup notification shim to focus window.
+// Validate the sender because Electron recommends validating IPC messages before acting on them.
+ipcMain.on("notification-clicked", (event) => {
+  if (!isMainWindowSender(event)) return;
   showMainWindow();
 });
 
-// Ask for permission to use the microphone if the OS requires it
-if (isMac()) {
-  console.log("asking for microphone access");
-  systemPreferences.askForMediaAccess("microphone");
-}
+// Receive notification counts observed by the sandboxed preload script.  This replaces the
+// old 3-second executeJavaScript polling loop and keeps DOM observation out of the main process.
+ipcMain.on("notification-count-changed", (event, count) => {
+  if (!isMainWindowSender(event)) return;
+
+  const numericCount = Number(count);
+  const safeCount = Number.isFinite(numericCount)
+    ? Math.max(0, Math.min(9999, Math.trunc(numericCount)))
+    : 0;
+
+  processNotificationCount(app, safeCount);
+});
+
+// The preload script watches for an unexpectedly empty document body.  If the page remains
+// empty long enough to be considered broken, reload Google Voice using the existing workaround.
+ipcMain.on("blank-page-detected", (event) => {
+  if (!isMainWindowSender(event)) return;
+  loadGoogleVoice();
+});
 
 // Show window when clicking on macosx dock icon
 app.on("activate", () => {
@@ -100,15 +114,49 @@ app.on("activate", () => {
 
   // Unhide on mac if dock icon is clicked
   if (win && !win.isVisible()) {
-    win.show();
+    showMainWindow();
   }
 });
 
-// Setup timer to keep dock notifications up to date
-setInterval(updateNotifications.bind(this, app), REFRESH_RATE);
+app.whenReady().then(async () => {
+  // If the computer is shutting down or restarting then close
+  powerMonitor.on("shutdown", () => {
+    exitApplication();
+  });
 
-app.dock && app.dock.setIcon(dockIcon);
-app.whenReady().then(createWindow);
+  // Setup context menu.  Inspect Element is useful during development but should not be
+  // exposed in packaged builds that display remote Google Voice content.
+  contextMenu({
+    showSaveImage: true,
+    showInspectElement: !app.isPackaged,
+  });
+
+  // Ask for permission to use the microphone if the OS requires it.
+  // macOS system media permission prompts should only be requested after Electron is ready.
+  if (isMac()) {
+    try {
+      console.log("asking for microphone access");
+      await systemPreferences.askForMediaAccess("microphone");
+    } catch (error) {
+      console.error("Unable to request microphone access:", error);
+    }
+  }
+
+  app.dock && app.dock.setIcon(dockIcon);
+
+  createWindow();
+
+  // electron-builder generates the update metadata consumed by electron-updater.
+  // Draft GitHub releases are ignored until they are actually published, which fits
+  // the current build.publish.releaseType configuration.
+  if (app.isPackaged) {
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+      console.error("Automatic update check failed:", error);
+    });
+  }
+});
 
 // Creates and returns this application's main BrowserWindow, navigated to Google Voice.
 function createWindow() {
@@ -123,8 +171,10 @@ function createWindow() {
     webPreferences: {
       spellcheck: true,
       preload: path.join(__dirname, "preload.js"),
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      webviewTag: false,
     },
   });
   //win.webContents.openDevTools();
@@ -216,45 +266,45 @@ function createWindow() {
         {
           label: "Report a &bug",
           click: () => {
-            shell.openExternal(constants.URL_GITHUB_REPORT_BUG);
+            openExternalSafe(constants.URL_GITHUB_REPORT_BUG);
           },
         },
         {
           label: "Request a &feature",
           click: () => {
-            shell.openExternal(constants.URL_GITHUB_FEATURE_REQUEST);
+            openExternalSafe(constants.URL_GITHUB_FEATURE_REQUEST);
           },
         },
         {
           label: "Ask a &question",
           click: () => {
-            shell.openExternal(constants.URL_GITHUB_ASK_QUESTION);
+            openExternalSafe(constants.URL_GITHUB_ASK_QUESTION);
           },
         },
         {
           label: "View &issues",
           click: () => {
-            shell.openExternal(constants.URL_GITHUB_VIEW_ISSUES);
+            openExternalSafe(constants.URL_GITHUB_VIEW_ISSUES);
           },
         },
         { type: "separator" },
         {
           label: "&Security Policy",
           click: () => {
-            shell.openExternal(constants.URL_GITHUB_SECURITY_POLICY);
+            openExternalSafe(constants.URL_GITHUB_SECURITY_POLICY);
           },
         },
         { type: "separator" },
         {
           label: "View &releases",
           click: () => {
-            shell.openExternal(constants.URL_GITHUB_RELEASES);
+            openExternalSafe(constants.URL_GITHUB_RELEASES);
           },
         },
         {
           label: `&About (v${app.getVersion()})`,
           click: () => {
-            shell.openExternal(constants.URL_GITHUB_README);
+            openExternalSafe(constants.URL_GITHUB_README);
           },
         },
       ],
@@ -277,43 +327,81 @@ function createWindow() {
     }
   }
 
-  // Navigate the window to Google Voice.  When it finishes loading, modify Google's markup as needed
-  // to support user customizations that we allow the user to make from within our application UI.
-  loadGoogleVoice();
-  win.webContents.on("did-finish-load", () => {
-    // Re-apply the theme last selected by the user.
-    const theme = store.get("prefs.theme") || constants.DEFAULT_SETTING_THEME;
-    const hideDialerSidebar =
-      store.get("prefs.hideDialerSidebar") ||
-      constants.DEFAULT_HIDE_DIALER_SIDEBAR;
-    cssInjector = new CSSInjector(app, win);
-    cssInjector.injectTheme(theme);
-    cssInjector.showHideDialerSidebar(hideDialerSidebar);
-  });
+  // Set explicit permission handlers for the session that loads remote Google Voice content.
+  // Electron otherwise permits many web permissions by default, so this keeps the app limited to
+  // permissions that Google Voice reasonably needs for calling and normal web-app behavior.
+  configureRemoteContentPermissions(win.webContents.session);
 
-  // Create our system notification area icon.
+  // Create our system notification area icon before navigation so that notification-count messages
+  // from the preload script can immediately update the tray icon on a fast page load.
   if (tray) {
-    tray.destroy;
+    tray.destroy();
   }
   tray = createTray(iconTray, constants.APPLICATION_NAME);
 
   badgeGenerator = new BadgeGenerator(win);
+  cssInjector = new CSSInjector(app, win);
 
-  win.webContents.on("new-window", function (e, url) {
-    e.preventDefault(); // Cancel the request to open the target URL in a new window
+  // Navigate the window to Google Voice.  When it finishes loading, modify Google's markup as needed
+  // to support user customizations that we allow the user to make from within our application UI.
+  loadGoogleVoice();
+  win.webContents.on("did-finish-load", () => {
+    // Only apply Google Voice-specific custom CSS on the actual Voice application page.
+    // This prevents a custom theme from accidentally restyling the Google Account login page.
+    if (!isGoogleVoiceUrl(win.webContents.getURL())) return;
 
-    // If the target URL is a Google Voice URL, have our main window navigate to it instead of opening
-    // it in a new window.  This supports the ability to add additional accounts and switch between
-    // them on-demand.  Otherwise, for all other URLs, have the system open them using the default type
-    // handler.  This is done to force URLs to open in the user's browser, where they are likely already
-    // signed into services that need authentication (e.g. Spotify).  Note that if the user ever gets
-    // stuck navigated somewhere that isn't the main Google Voice page, they can always use the "Reload"
-    // item in the notification area icon context menu to get back to the Google Voice home page.
-    const hostName = Url.parse(url).hostname;
-    if (hostName === "voice.google.com" || hostName === "accounts.google.com") {
-      win && win.loadURL(url);
+    // Re-apply the theme last selected by the user.
+    const theme = store.get("prefs.theme") ?? constants.DEFAULT_SETTING_THEME;
+    const hideDialerSidebar =
+      store.get("prefs.hideDialerSidebar") ??
+      constants.DEFAULT_HIDE_DIALER_SIDEBAR;
+
+    cssInjector.injectTheme(theme);
+    cssInjector.showHideDialerSidebar(hideDialerSidebar);
+  });
+
+  // Modern Electron uses setWindowOpenHandler instead of the legacy "new-window" event.
+  // If the target URL is a Google Voice URL, have our main window navigate to it instead of opening
+  // it in a new window.  This supports the ability to add additional accounts and switch between
+  // them on-demand.  Otherwise, for all other URLs, have the system open them using the default type
+  // handler.  This is done to force URLs to open in the user's browser, where they are likely already
+  // signed into services that need authentication (e.g. Spotify).  Note that if the user ever gets
+  // stuck navigated somewhere that isn't the main Google Voice page, they can always use the "Reload"
+  // item in the notification area icon context menu to get back to the Google Voice home page.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (isAllowedInternalUrl(url)) {
+      if (win && !win.isDestroyed()) {
+        win.loadURL(url).catch((error) => {
+          console.error(`Unable to load internal Google URL: ${url}`, error);
+        });
+      }
     } else {
-      shell.openExternal(url);
+      openExternalSafe(url);
+    }
+
+    return { action: "deny" };
+  });
+
+  // Prevent the current renderer from silently navigating away from the two origins intentionally
+  // hosted inside the Electron window.  External links are handed to the operating system browser.
+  win.webContents.on("will-navigate", (event, url) => {
+    if (isAllowedInternalUrl(url)) return;
+
+    event.preventDefault();
+    openExternalSafe(url);
+  });
+
+  // If Chromium's renderer process crashes, reload the known-safe Google Voice entry point instead
+  // of leaving the user with a dead window.
+  win.webContents.on("render-process-gone", (event, details) => {
+    console.error("Google Voice renderer process exited:", details);
+
+    if (!app.isQuiting) {
+      setTimeout(() => {
+        if (win && !win.isDestroyed()) {
+          loadGoogleVoice();
+        }
+      }, 500);
     }
   });
 
@@ -331,20 +419,31 @@ function createWindow() {
       // subsequent termination of the application to proceed.  Otherwise, cancel the
       // close and hide the window instead; we'll keep running in the notification area.
       const exitOnClose =
-        store.get("prefs.exitOnClose") ||
+        store.get("prefs.exitOnClose") ??
         constants.DEFAULT_SETTING_EXIT_ON_CLOSE;
       if (!exitOnClose) {
         event.preventDefault();
         win.hide();
+      } else {
+        // "Exit on close" should actually terminate the tray application, not merely destroy
+        // the BrowserWindow and leave the process running in the background.
+        event.preventDefault();
+        exitApplication();
       }
     }
   });
 
-  win.on("restore", function (event) {
+  win.on("restore", function () {
     win.show();
   });
 
   win.on("resize", saveWindowSize);
+
+  win.on("closed", () => {
+    win = null;
+    cssInjector = null;
+    badgeGenerator = null;
+  });
 
   // Now that we've finished creating and initializing the window, show
   // it (unless the user has enabled the "start minimized" setting).
@@ -369,59 +468,17 @@ function exitApplication() {
 // load, Google Voice itself takes care of asking the user to log in when necessary.
 function loadGoogleVoice(loadExternal = false) {
   if (loadExternal) {
-    shell.openExternal(constants.URL_GOOGLE_VOICE);
-  } else {
-    win && win.loadURL(constants.URL_GOOGLE_VOICE);
+    openExternalSafe(constants.URL_GOOGLE_VOICE);
+  } else if (win && !win.isDestroyed()) {
+    win.loadURL(constants.URL_GOOGLE_VOICE).catch((error) => {
+      console.error("Unable to load Google Voice:", error);
+    });
   }
 }
 
-// Invoked every "REFRESH_RATE" seconds.  Parses the current notification count from Google
-// Voice's markup and then has this application display it to the user in an appropriate way.
-// Also implements a workaround for Electron's "blank white screen" bug that many users encounter.
-function updateNotifications(app) {
-  if (!win || BrowserWindow.getAllWindows().length === 0) {
-    return;
-  }
-
-  let sum = 0;
-
-  // Query the dom for the notification badges
-  win.webContents
-    .executeJavaScript(
-      `Array.from(document.querySelectorAll('.gv_root .navListItem .navItemBadge')).map(n => n.textContent && n.textContent.trim());`
-    )
-    .then((counts) => {
-      if (counts && counts.length > 0) {
-        sum = counts.reduce((accum, count) => {
-          try {
-            accum += parseInt(count, 10);
-          } catch (e) {}
-          return accum;
-        }, 0);
-      }
-
-      processNotificationCount(app, sum);
-    });
-
-  // The following is a workaround for the Electron bug where after an indeterminate
-  // period of inactivity, the main application window turns into a blank white screen.
-  // When this happens, inspection shows that the loaded page consists of the following
-  // empty HTML markup:
-  //
-  //     <html><head></head><body></body></html>
-  //
-  // As such, we perform a simple check as to whether the <body/> of our loaded page
-  // has become empty.  If it has, then we automatically reload Google Voice for the
-  // user.  This seems to eliminate the problem entirely, without any adverse effects,
-  // as once we detect an empty body, the application is already in a non-working state.
-  win.webContents
-    .executeJavaScript("document.querySelector('body').childNodes.length")
-    .then((result) => {
-      if (result === 0) {
-        loadGoogleVoice();
-      }
-    });
-}
+// Notification counts are now observed by src/preload.js using a MutationObserver.
+// This avoids repeatedly running arbitrary JavaScript from the main process while still
+// preserving the same processNotificationCount() operating-system behavior below.
 
 // Displays a specified notification count to the user (if it isn't already
 // being displayed), in a way that is appropriate for their Operating System.
@@ -456,10 +513,18 @@ function processNotificationCount_Windows(oldCount, newCount) {
     // and then apply the image as an overlay icon on our main window's Taskbar button.  Note that if the user has
     // the "Use small Taskbar buttons" setting turned on, the overlay won't actually be rendered due to lack of space.
     if (newCount) {
-      badgeGenerator.generate(newCount).then((base64) => {
-        const image = nativeImage.createFromDataURL(base64);
-        win.setOverlayIcon(image, "You have new messages and/or calls");
-      });
+      badgeGenerator
+        .generate(newCount)
+        .then((base64) => {
+          const image = nativeImage.createFromDataURL(base64);
+          win.setOverlayIcon(image, "You have new messages and/or calls");
+        })
+        .catch((error) => {
+          console.error(
+            "Unable to generate Windows notification badge:",
+            error,
+          );
+        });
     } else {
       win.setOverlayIcon(null, "");
     }
@@ -519,7 +584,7 @@ function createTray(iconPath, tipText) {
           exitApplication();
         },
       },
-    ])
+    ]),
   );
 
   appIcon.on("click", function (event) {
@@ -531,7 +596,14 @@ function createTray(iconPath, tipText) {
 
 // Displays this application's main window to the user.
 function showMainWindow() {
-  win && win.show();
+  if (!win || win.isDestroyed()) return;
+
+  if (win.isMinimized()) {
+    win.restore();
+  }
+
+  win.show();
+  win.focus();
 }
 
 // Creates (if it doesn't already exist) this application's "Settings" window, and then displays it to the user.
@@ -540,31 +612,36 @@ function showSettingsWindow() {
     // Create our Settings window, keeping a global reference to it.  This reference allows
     // us to know when the window is open, preventing the user from opening it a second time.
     settingsWindow = new BrowserWindow({
-      width: 600,
-      height: 600,
+      width: 680,
+      height: 720,
+      minWidth: 560,
+      minHeight: 560,
       title: "Settings",
       parent: win,
       modal: true,
-      resizable: false,
+      resizable: true,
       minimizable: false,
       webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false,
+        preload: path.join(__dirname, "settings-preload.js"),
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        webviewTag: false,
       },
     });
     settingsWindow.removeMenu();
 
-    // Stash the user's settings store on the window so that it can be accessed by the window's renderer process.
-    settingsWindow.prefs = store.get("prefs") || {};
+    // Settings are exposed through a narrow preload/contextBridge API instead of attaching
+    // privileged objects directly to the renderer window.
 
     // Load our settings page into the window.
     settingsWindow.loadFile(
-      path.join(appPath, "src", "pages", "customize.html")
+      path.join(appPath, "src", "pages", "customize.html"),
     );
     //settingsWindow.webContents.openDevTools();
 
     // When the window gets closed, release its global reference.
-    settingsWindow.on("close", function () {
+    settingsWindow.on("closed", function () {
       settingsWindow = null;
     });
   } else {
@@ -574,17 +651,161 @@ function showSettingsWindow() {
 }
 
 function saveWindowSize() {
-  const bounds = win.getBounds();
-  const prefs = store.get("prefs") || {};
-  prefs.windowWidth = bounds.width;
-  prefs.windowHeight = bounds.height;
+  // Resize can fire dozens of times while the user drags the window.  Debounce the disk write
+  // so electron-store is not updated on every individual resize event.
+  clearTimeout(saveWindowSizeTimer);
 
-  store.set("prefs", prefs);
+  saveWindowSizeTimer = setTimeout(() => {
+    if (!win || win.isDestroyed()) return;
+
+    const bounds = win.getBounds();
+    store.set("prefs.windowWidth", bounds.width);
+    store.set("prefs.windowHeight", bounds.height);
+  }, 250);
 }
 
 // ====================================================================================================================
 // Helper Functions
 // ====================================================================================================================
+
+// Returns true when an IPC message came from the main Google Voice BrowserWindow.
+function isMainWindowSender(event) {
+  return Boolean(
+    win && !win.isDestroyed() && event && event.sender === win.webContents,
+  );
+}
+
+// Returns true when an IPC message came from the local Settings BrowserWindow.
+function isSettingsWindowSender(event) {
+  return Boolean(
+    settingsWindow &&
+    !settingsWindow.isDestroyed() &&
+    event &&
+    event.sender === settingsWindow.webContents,
+  );
+}
+
+// Throws when a privileged Settings IPC method is invoked by anything except the Settings window.
+function assertSettingsWindowSender(event) {
+  if (!isSettingsWindowSender(event)) {
+    throw new Error("Rejected IPC request from an untrusted renderer.");
+  }
+}
+
+// Returns true when the specified URL is the actual Google Voice application.
+function isGoogleVoiceUrl(value) {
+  try {
+    const parsed = new URL(value);
+    return (
+      parsed.protocol === "https:" &&
+      parsed.hostname === constants.GOOGLE_VOICE_HOSTNAME
+    );
+  } catch (error) {
+    return false;
+  }
+}
+
+// Returns true when a URL may remain inside the Electron BrowserWindow.
+// Keep this allowlist intentionally small: Voice itself plus Google's account login origin.
+function isAllowedInternalUrl(value) {
+  try {
+    const parsed = new URL(value);
+
+    return (
+      parsed.protocol === "https:" &&
+      (parsed.hostname === constants.GOOGLE_VOICE_HOSTNAME ||
+        parsed.hostname === constants.GOOGLE_ACCOUNTS_HOSTNAME)
+    );
+  } catch (error) {
+    return false;
+  }
+}
+
+// Opens an external URL only when it uses a protocol that is reasonable to hand to the OS.
+// This prevents renderer-controlled values from being passed to shell.openExternal with dangerous
+// schemes such as file:, javascript:, data:, or custom executable handlers.
+function openExternalSafe(value) {
+  try {
+    const parsed = new URL(value);
+    const allowedProtocols = new Set(["https:", "http:", "mailto:", "tel:"]);
+
+    if (!allowedProtocols.has(parsed.protocol)) {
+      console.warn(`Blocked unsupported external URL: ${value}`);
+      return;
+    }
+
+    shell.openExternal(value).catch((error) => {
+      console.error(`Unable to open external URL: ${value}`, error);
+    });
+  } catch (error) {
+    console.warn(`Blocked invalid external URL: ${value}`);
+  }
+}
+
+// Configures an explicit permission allowlist for remote Google Voice content.
+function configureRemoteContentPermissions(ses) {
+  const voicePermissions = new Set([
+    "media",
+    "notifications",
+    "speaker-selection",
+    "clipboard-sanitized-write",
+    "fullscreen",
+    "storage-access",
+    "top-level-storage-access",
+  ]);
+
+  const accountPermissions = new Set([
+    "storage-access",
+    "top-level-storage-access",
+  ]);
+
+  const isPermissionAllowed = (permission, originValue) => {
+    try {
+      const parsed = new URL(originValue);
+
+      if (parsed.protocol !== "https:") {
+        return false;
+      }
+
+      if (parsed.hostname === constants.GOOGLE_VOICE_HOSTNAME) {
+        return voicePermissions.has(permission);
+      }
+
+      if (parsed.hostname === constants.GOOGLE_ACCOUNTS_HOSTNAME) {
+        return accountPermissions.has(permission);
+      }
+
+      return false;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  ses.setPermissionCheckHandler(
+    (webContents, permission, requestingOrigin, details) => {
+      const origin =
+        details?.requestingUrl ||
+        details?.securityOrigin ||
+        requestingOrigin ||
+        webContents?.getURL() ||
+        "";
+
+      return isPermissionAllowed(permission, origin);
+    },
+  );
+
+  ses.setPermissionRequestHandler(
+    (webContents, permission, callback, details) => {
+      const origin =
+        details?.requestingUrl ||
+        details?.securityOrigin ||
+        webContents?.getURL() ||
+        "";
+
+      callback(isPermissionAllowed(permission, origin));
+    },
+  );
+}
 
 function isMac() {
   return process.platform === "darwin";
@@ -597,33 +818,48 @@ function isWindows() {
 // Invokable IPC Handlers
 // ====================================================================================================================
 
-// Returns the execution path of this application.
-ipcMain.handle("get-appPath", () => {
-  return app.getAppPath();
+// Returns the icon URL used by the main-window notification shim.
+ipcMain.handle("get-notification-icon-url", (event) => {
+  if (!isMainWindowSender(event)) {
+    throw new Error("Rejected IPC request from an untrusted renderer.");
+  }
+
+  return pathToFileURL(icon).href;
 });
 
 // Returns the platform that this application is running on.
-ipcMain.handle("get-platform", () => {
+ipcMain.handle("get-platform", (event) => {
+  assertSettingsWindowSender(event);
   return process.platform;
 });
 
 // Returns an object representing the user's current settings store.
-ipcMain.handle("get-user-prefs", () => {
+ipcMain.handle("get-user-prefs", (event) => {
+  assertSettingsWindowSender(event);
   return store.get("prefs") || {};
 });
 
 // Returns a bool indicating whether this application is registered to start automatically at logon.
-ipcMain.handle("get-start-automatically", async () => {
-  let autoLaunch = new AutoLaunch({
+ipcMain.handle("get-start-automatically", async (event) => {
+  assertSettingsWindowSender(event);
+
+  const autoLaunch = new AutoLaunch({
     name: constants.APPLICATION_NAME,
     path: app.getPath("exe"),
   });
-  return await autoLaunch.isEnabled();
+
+  try {
+    return await autoLaunch.isEnabled();
+  } catch (error) {
+    console.error("Unable to read auto-launch state:", error);
+    return false;
+  }
 });
 
 // Returns the current zoom level of this this application's main window.
-ipcMain.handle("get-zoom-level", () => {
-  return win.webContents.getZoomLevel();
+ipcMain.handle("get-zoom-level", (event) => {
+  assertSettingsWindowSender(event);
+  return win && !win.isDestroyed() ? win.webContents.getZoomLevel() : 0;
 });
 
 // ====================================================================================================================
@@ -632,80 +868,109 @@ ipcMain.handle("get-zoom-level", () => {
 
 // Called when the theme has been changed.
 ipcMain.on("pref-change-theme", (event, theme) => {
+  if (!isSettingsWindowSender(event)) return;
+  if (!constants.SUPPORTED_THEMES.includes(theme)) return;
+
   console.log(`Theme changed to: ${theme}`);
 
   // Apply the selected them and then save the selection to the user's settings store.
-  cssInjector.injectTheme(theme);
-  const prefs = store.get("prefs") || {};
-  prefs.theme = theme;
-  store.set("prefs", prefs);
+  if (cssInjector) {
+    cssInjector.injectTheme(theme);
+  }
+  store.set("prefs.theme", theme);
 });
 
 // Called when the zoom level has been changed.
 ipcMain.on("pref-change-zoom", (event, zoomLevel) => {
-  console.log(`Zoom level changed to: ${zoomLevel}`);
+  if (!isSettingsWindowSender(event)) return;
+
+  const parsedZoomLevel = Number.parseInt(zoomLevel, 10);
+  if (!Number.isInteger(parsedZoomLevel)) return;
+
+  const safeZoomLevel = Math.max(-8, Math.min(9, parsedZoomLevel));
+  console.log(`Zoom level changed to: ${safeZoomLevel}`);
 
   // Apply the newly selected zoom level.  Note that there is no need to save this setting to
   // the user's settings store.  Electron handles remembering our main window's zoom level by
   // default, so it will automatically be restored the next time the application is launched.
-  win.webContents.setZoomLevel(parseInt(zoomLevel));
-});
-
-// Called when the "show menu bar" checkbox has been checked/unchecked.
-ipcMain.on("pref-change-show-menubar", (e, showMenuBar) => {
-  console.log(`"Show menu bar changed to: ${showMenuBar}`);
-
-  // Apply the new value and then save it to the user's settings store.
-  win.setMenuBarVisibility(showMenuBar);
-  const prefs = store.get("prefs") || {};
-  prefs.showMenuBar = showMenuBar;
-  store.set("prefs", prefs);
-});
-
-// Called when the "start automatically" checkbox has been checked/unchecked.
-ipcMain.on("pref-change-start-automatically", (e, startAutomatically) => {
-  console.log(`"Start Automatically" changed to: ${startAutomatically}`);
-
-  // Register/unregister this application to be automatically started at logon.
-  let autoLaunch = new AutoLaunch({
-    name: constants.APPLICATION_NAME,
-    path: app.getPath("exe"),
-  });
-  if (startAutomatically) {
-    autoLaunch.enable();
-  } else {
-    autoLaunch.disable();
+  if (win && !win.isDestroyed()) {
+    win.webContents.setZoomLevel(safeZoomLevel);
   }
 });
 
+// Called when the "show menu bar" checkbox has been checked/unchecked.
+ipcMain.on("pref-change-show-menubar", (event, showMenuBar) => {
+  if (!isSettingsWindowSender(event)) return;
+  if (typeof showMenuBar !== "boolean") return;
+
+  console.log(`"Show menu bar changed to: ${showMenuBar}`);
+
+  // Apply the new value and then save it to the user's settings store.
+  if (win && !win.isDestroyed()) {
+    win.setMenuBarVisibility(showMenuBar);
+  }
+  store.set("prefs.showMenuBar", showMenuBar);
+});
+
+// Called when the "start automatically" checkbox has been checked/unchecked.
+ipcMain.on(
+  "pref-change-start-automatically",
+  async (event, startAutomatically) => {
+    if (!isSettingsWindowSender(event)) return;
+    if (typeof startAutomatically !== "boolean") return;
+
+    console.log(`"Start Automatically" changed to: ${startAutomatically}`);
+
+    // Register/unregister this application to be automatically started at logon.
+    const autoLaunch = new AutoLaunch({
+      name: constants.APPLICATION_NAME,
+      path: app.getPath("exe"),
+    });
+
+    try {
+      if (startAutomatically) {
+        await autoLaunch.enable();
+      } else {
+        await autoLaunch.disable();
+      }
+    } catch (error) {
+      console.error("Unable to update auto-launch state:", error);
+    }
+  },
+);
+
 // Called when the "start minimized" checkbox has been checked/unchecked.
-ipcMain.on("pref-change-start-minimized", (e, startMinimized) => {
+ipcMain.on("pref-change-start-minimized", (event, startMinimized) => {
+  if (!isSettingsWindowSender(event)) return;
+  if (typeof startMinimized !== "boolean") return;
+
   console.log(`"Start Minimized" changed to: ${startMinimized}`);
 
   // Apply the new value and then save it to the user's settings store.
-  const prefs = store.get("prefs") || {};
-  prefs.startMinimized = startMinimized;
-  store.set("prefs", prefs);
+  store.set("prefs.startMinimized", startMinimized);
 });
 
 // Called when the "exit on close" checkbox has been checked/unchecked.
-ipcMain.on("pref-change-exit-on-close", (e, exitOnClose) => {
+ipcMain.on("pref-change-exit-on-close", (event, exitOnClose) => {
+  if (!isSettingsWindowSender(event)) return;
+  if (typeof exitOnClose !== "boolean") return;
+
   console.log(`"Exit on close" changed to: ${exitOnClose}`);
 
   // Apply the new value and then save it to the user's settings store.
-  const prefs = store.get("prefs") || {};
-  prefs.exitOnClose = exitOnClose;
-  store.set("prefs", prefs);
+  store.set("prefs.exitOnClose", exitOnClose);
 });
 
 // Called when the "hide dialer sidebar" checkbox has been checked/unchecked.
-ipcMain.on("pref-change-hide-dialer-sidebar", (e, hideDialerSidebar) => {
+ipcMain.on("pref-change-hide-dialer-sidebar", (event, hideDialerSidebar) => {
+  if (!isSettingsWindowSender(event)) return;
+  if (typeof hideDialerSidebar !== "boolean") return;
+
   console.log(`Hide dialer sidebar changed to: ${hideDialerSidebar}`);
 
   // Apply the new value and then save it to the user's settings store.
-  const prefs = store.get("prefs") || {};
-  prefs.hideDialerSidebar = hideDialerSidebar;
-
-  cssInjector.showHideDialerSidebar(hideDialerSidebar);
-  store.set("prefs", prefs);
+  if (cssInjector) {
+    cssInjector.showHideDialerSidebar(hideDialerSidebar);
+  }
+  store.set("prefs.hideDialerSidebar", hideDialerSidebar);
 });

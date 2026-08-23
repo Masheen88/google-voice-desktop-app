@@ -578,7 +578,7 @@ span.mdc-button__label {
   background-color: $selection;
 }
 
-/*googlge voice app - enter a or number bg, also need to set placeholder text/bg color*/
+/*google voice app - enter a or number bg, also need to set placeholder text/bg color*/
 .input-row {
   background-color: $background;
   gap: 0.5rem;
@@ -592,21 +592,21 @@ span.mdc-button__label {
   color: $foreground;
 }
 
-/* Make the dialer input background red */
+/* Keep the dialer input aligned with the DarkPlus palette. */
 .input-row .input-container .input {
-  background-color: red !important;
-  color: #ffffff !important;
+  background-color: $panel !important;
+  color: $foreground !important;
+  border: 1px solid $border-strong !important;
   border-radius: 4px;
 }
 
-/* Optional: change placeholder color too */
+/* Keep placeholder text readable without using a development/debug color. */
 .input-row .input-container .input::placeholder {
-  background-color: $background;
-  color: #ffd5d5;
+  color: $muted-2;
 }
 
 button.mdc-button.mat-mdc-button-base.call-button.mat-mdc-button.mat-primary.mat-mdc-button-disabled {
-  background-color: green;
+  background-color: $secondary;
   color: $foreground;
 }
 
@@ -649,13 +649,13 @@ button.mdc-button.mat-mdc-button-base.call-button.ng-tns-c1668095682-2.mat-mdc-b
 }
 
 .dnd-status.content-right {
-  $background: $selection !important;
-  color: red;
+  background-color: $selection !important;
+  color: $foreground;
 }
 
 // Target spans with xapautoid + the specific classes
 span[xapautoid].title.content {
-  color: red !important;
+  color: $foreground !important;
 }
 
 .gvPageRoot[_nghost-ng-c1815221090] .dnd-status[_ngcontent-ng-c1815221090],
@@ -707,4 +707,34 @@ span[xapautoid].title.content {
 /* Active Call BG section */
 section.active-call.ng-tns-c3099836411-1 {
   background-color: $background;
+}
+
+/*NOTE text mesaging area section */
+
+.header.ng-star-inserted {
+  background-color: $background;
+}
+
+.message-input-container {
+  padding-right: 0.5em;
+}
+
+/* Added padding and proper display colors */
+textarea.cdk-textarea-autosize.message-input.ng-valid.ng-touched.ng-dirty {
+  color: white !important;
+  padding-left: 2px;
+  background-color: $background !important;
+  border-radius: 5px;
+}
+
+.inbox-summary-container.cards.ng-star-inserted {
+  background-color: $background;
+}
+
+mat-card.mat-mdc-card.mdc-card.borderless-card.mat-mdc-card-filled.mdc-card--filled {
+  background-color: $background;
+}
+
+gv-annotation.primary-text.header-title {
+  color: white;
 }

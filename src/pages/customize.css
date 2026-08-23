@@ -1,4 +1,4 @@
-/***************************************************************************************************
+/**********************************************************************************************************************
   We use a CSS Grid to lay out the controls in the Settings window.  The grid consists of a single
   column and two rows.  The second row is meant to contain a single row of any and all buttons that
   the window needs to have (e.g. "Close").  As such, this row is assigned a height of "min-content" so
@@ -13,31 +13,279 @@
   |-----------------------------------|
   |                           [Close] |
   -------------------------------------
-***************************************************************************************************/
+**********************************************************************************************************************/
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+body {
+  min-width: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
 .dialog-grid {
   display: grid;
-  grid-template-rows: auto min-content;
-  grid-template-columns: auto;
-  height: 100vh;
-  padding: 20px;
+  grid-template-rows: minmax(0, 1fr) min-content;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--bg);
+}
 
-  /* Theme surface styling (doesn't change layout) */
+.settings-content {
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.settings-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 6px;
+  font-size: 1.75rem;
+  line-height: 1.15;
+}
+
+h2 {
+  margin-bottom: 4px;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.settings-description,
+.section-heading p,
+.field-help,
+.setting-option small {
+  color: var(--muted);
+}
+
+.settings-description {
+  max-width: 520px;
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
+.settings-card {
+  padding: 18px;
+  margin-bottom: 14px;
   background: var(--surface);
   border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.section-heading p {
+  margin-bottom: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.font-weight-bold {
+  font-weight: 700;
+}
+
+label {
+  color: var(--fg);
+}
+
+.form-control {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 8px;
+  padding: 0 12px;
+  color: var(--input-fg);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
   border-radius: 10px;
-  margin: 10px;
+  outline: none;
+}
+
+.form-control:focus-visible,
+.btn:focus-visible,
+.form-check-input:focus-visible {
+  border-color: var(--primary);
+  outline: 3px solid color-mix(in srgb, var(--primary) 28%, transparent);
+  outline-offset: 2px;
+}
+
+.label-row,
+.zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.label-row {
+  justify-content: space-between;
+}
+
+#zoom-value {
+  min-width: 54px;
+  padding: 4px 8px;
+  color: var(--fg);
+  background: var(--selection);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.range-control {
+  min-height: auto;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  accent-color: var(--primary);
+}
+
+.field-help {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.settings-options {
+  display: grid;
+  gap: 8px;
+}
+
+.setting-option {
+  display: grid;
+  grid-template-columns: min-content minmax(0, 1fr);
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.setting-option:hover {
+  background: var(--selection);
+}
+
+.setting-option strong,
+.setting-option small {
+  display: block;
+}
+
+.setting-option strong {
+  margin-bottom: 3px;
+  font-size: 0.9rem;
+}
+
+.setting-option small {
+  line-height: 1.4;
 }
 
 /*Give checkboxes a slightly larger size that normal.*/
 input[type="checkbox"] {
   width: 20px;
   height: 20px;
-  display: inline-block;
-  position: relative;
-  top: 5px;
-
-  /* Theme accent */
+  margin: 1px 0 0;
   accent-color: var(--primary);
+}
+
+.btn {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 100ms ease,
+    filter 100ms ease,
+    background-color 100ms ease;
+}
+
+.btn:hover {
+  filter: brightness(1.06);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  color: #ffffff;
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-secondary {
+  flex: 0 0 auto;
+  color: var(--secondary-button-fg);
+  background-color: var(--secondary);
+  border-color: var(--border);
+}
+
+.settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 24px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(12px);
 }
 
 /* =================================================================================================
@@ -52,16 +300,15 @@ html[data-theme="default"] {
   --bg: #ffffff;
   --fg: #1f2328;
   --surface: #f5f7fa;
-  --border: #ced4da;
-
+  --border: #d0d7de;
   --primary: #0d6efd;
-  --secondary: #6c757d;
-  --muted: #6c757d;
-
+  --secondary: #e9ecef;
+  --secondary-button-fg: #1f2328;
+  --muted: #656d76;
   --input-bg: #ffffff;
   --input-fg: #1f2328;
-
-  --selection: #0d6efd;
+  --selection: #eef2f6;
+  --shadow: 0 8px 24px rgba(140, 149, 159, 0.12);
 }
 
 /* Dracula */
@@ -70,15 +317,14 @@ html[data-theme="dracula"] {
   --fg: #f8f8f2;
   --surface: #303241;
   --border: #44475a;
-
   --primary: #bd93f9;
-  --secondary: #ffb86c;
-  --muted: #a4a6b3;
-
+  --secondary: #44475a;
+  --secondary-button-fg: #f8f8f2;
+  --muted: #b8bac7;
   --input-bg: #2f3140;
   --input-fg: #f8f8f2;
-
-  --selection: #44475a;
+  --selection: #3a3c4d;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
 /* Solar (matches your solar.scss) */
@@ -86,15 +332,15 @@ html[data-theme="solar"] {
   --bg: #002b36;
   --fg: #ffffff;
   --primary: #2aa198;
-  --secondary: #b58900;
-  --selection: #839496;
-
+  --secondary: #073642;
+  --secondary-button-fg: #ffffff;
+  --selection: #073642;
   --surface: #01323e;
   --border: #0a3f4d;
-
-  --muted: #839496;
+  --muted: #93a1a1;
   --input-bg: #073642;
   --input-fg: #ffffff;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 /* Minty (Bootswatch-ish) */
@@ -103,15 +349,14 @@ html[data-theme="minty"] {
   --fg: #212529;
   --surface: #ffffff;
   --border: #dfe3e6;
-
-  --primary: #78c2ad;
-  --secondary: #f3969a;
+  --primary: #58ad95;
+  --secondary: #eef7f4;
+  --secondary-button-fg: #21483d;
   --muted: #6c757d;
-
   --input-bg: #ffffff;
   --input-fg: #212529;
-
-  --selection: #78c2ad;
+  --selection: #e7f5f1;
+  --shadow: 0 8px 24px rgba(50, 90, 80, 0.1);
 }
 
 /* Cerulean (Bootswatch-ish) */
@@ -120,15 +365,14 @@ html[data-theme="cerulean"] {
   --fg: #2c3e50;
   --surface: #f7f9fb;
   --border: #dfe6ee;
-
-  --primary: #2fa4e7;
+  --primary: #2f8fc7;
   --secondary: #e9ecef;
+  --secondary-button-fg: #2c3e50;
   --muted: #6c757d;
-
   --input-bg: #ffffff;
   --input-fg: #2c3e50;
-
-  --selection: #2fa4e7;
+  --selection: #e7f3fb;
+  --shadow: 0 8px 24px rgba(47, 164, 231, 0.1);
 }
 
 /* DarkPlus (VS Code Dark+ vibe) */
@@ -137,68 +381,35 @@ html[data-theme="darkplus"] {
   --fg: #d4d4d4;
   --surface: #252526;
   --border: #3a3d41;
-
-  --primary: #0e639c;
-  --secondary: #3a3d41;
-  --muted: #9da2a6;
-
-  --input-bg: #252526;
+  --primary: #1681bd;
+  --secondary: #333337;
+  --secondary-button-fg: #d4d4d4;
+  --muted: #a9adb1;
+  --input-bg: #1f1f20;
   --input-fg: #d4d4d4;
-
-  --selection: #264f78;
+  --selection: #2a2d2e;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
-/* =================================================================================================
-   Apply variables to the page + Bootstrap overrides
-================================================================================================= */
+@media (max-width: 520px) {
+  .settings-content {
+    padding: 18px;
+  }
 
-html,
-body {
-  height: 100%;
-  background: var(--bg) !important;
-  color: var(--fg) !important;
-}
+  .settings-card {
+    padding: 15px;
+  }
 
-/* Labels / text */
-label,
-.form-check-label,
-.font-weight-bold {
-  color: var(--fg) !important;
-}
+  .zoom-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
 
-/* Inputs, selects, sliders */
-.form-control,
-select.form-control,
-input.form-control {
-  background: var(--input-bg) !important;
-  color: var(--input-fg) !important;
-  border-color: var(--border) !important;
-}
+  .btn-secondary {
+    align-self: flex-end;
+  }
 
-/* Focus */
-.form-control:focus {
-  border-color: var(--primary) !important;
-  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent) !important;
-}
-
-/* Buttons */
-.btn-primary {
-  background-color: var(--primary) !important;
-  border-color: var(--primary) !important;
-  color: #fff !important;
-}
-
-.btn-secondary {
-  background-color: var(--secondary) !important;
-  border-color: var(--secondary) !important;
-  color: #fff !important;
-}
-
-/* Minor spacing polish (visual only) */
-.form-group {
-  margin-bottom: 1rem;
-}
-
-#second-row {
-  margin-top: 8px;
+  .settings-footer {
+    padding: 12px 18px;
+  }
 }

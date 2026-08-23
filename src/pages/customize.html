@@ -1,129 +1,181 @@
-<html>
+<!doctype html>
+<html lang="en" data-theme="default">
   <head>
-    <link rel="stylesheet" href="customize.css" />
-    <link
-      rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-      integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
-      crossorigin="anonymous"
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-src 'none';"
     />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voice Desktop Settings</title>
+    <link rel="stylesheet" href="customize.css" />
   </head>
   <body>
-    <div class="dialog-grid">
+    <main class="dialog-grid">
       <!--Place setting controls in this div.-->
-      <div id="first-row">
-        <!--"Theme" dropdown-->
-        <div class="form-group">
-          <label for="theme" class="font-weight-bold">Theme</label>
-          <select class="form-control" id="theme">
-            <option value="default">Default</option>
-            <option value="dracula">Dracula</option>
-            <option value="solar">Solar</option>
-            <option value="minty">Minty</option>
-            <option value="cerulean">Cerulean</option>
-            <option value="darkplus">DarkPlus</option>
-          </select>
-        </div>
+      <div id="first-row" class="settings-content">
+        <header class="settings-header">
+          <div>
+            <p class="eyebrow">Voice Desktop</p>
+            <h1>Settings</h1>
+            <p class="settings-description">
+              Personalize how Voice Desktop looks, starts, and behaves.
+            </p>
+          </div>
+        </header>
 
-        <!--"Zoom" slider-->
-        <div class="form-group">
-          <label class="font-weight-bold" style="margin-bottom: 0"
-            >Zoom % (25-500)</label
-          >
-          <div class="form-row">
-            <div class="col">
+        <!--"Theme" dropdown-->
+        <section class="settings-card" aria-labelledby="appearance-heading">
+          <div class="section-heading">
+            <div>
+              <h2 id="appearance-heading">Appearance</h2>
+              <p>Adjust the Google Voice theme and application zoom.</p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="theme" class="font-weight-bold">Theme</label>
+            <select class="form-control" id="theme">
+              <option value="default">Default</option>
+              <option value="dracula">Dracula</option>
+              <option value="solar">Solar</option>
+              <option value="minty">Minty</option>
+              <option value="cerulean">Cerulean</option>
+              <option value="darkplus">DarkPlus</option>
+            </select>
+          </div>
+
+          <!--"Zoom" slider-->
+          <div class="form-group">
+            <div class="label-row">
+              <label class="font-weight-bold" for="zoom">Zoom</label>
+              <output id="zoom-value" for="zoom">100%</output>
+            </div>
+
+            <div class="zoom-row">
               <input
                 type="range"
-                class="form-control"
+                class="form-control range-control"
                 id="zoom"
                 min="-8"
                 max="9"
                 step="1"
               />
-            </div>
-            <div class="col-auto">
+
               <button type="button" class="btn btn-secondary" id="reset-zoom">
                 Reset
               </button>
             </div>
+
+            <p class="field-help">
+              Electron zoom levels map to approximately 23%–516%; 0 is 100%.
+            </p>
           </div>
-        </div>
+        </section>
 
         <!--Options-->
-        <div class="form-group">
-          <label class="font-weight-bold">Options</label>
-
-          <!--"Show menu bar" checkbox (Windows/Linux only, will get hidden for Mac)-->
-          <div class="form-check" id="show-menubar-div">
-            <input class="form-check-input" type="checkbox" id="show-menubar" />
-            <label class="form-check-label" for="show-menubar"
-              >Show menu bar</label
-            >
+        <section class="settings-card" aria-labelledby="behavior-heading">
+          <div class="section-heading">
+            <div>
+              <h2 id="behavior-heading">Application behavior</h2>
+              <p>
+                Choose how Voice Desktop starts, closes, and uses window chrome.
+              </p>
+            </div>
           </div>
 
-          <!--"Start automatically" checkbox-->
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              id="start-automatically"
-            />
-            <label class="form-check-label" for="start-automatically"
-              >Start application automatically at logon</label
-            >
-          </div>
+          <div class="settings-options">
+            <!--"Show menu bar" checkbox (Windows/Linux only, will get hidden for Mac)-->
+            <label class="setting-option" id="show-menubar-div">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="show-menubar"
+              />
+              <span>
+                <strong>Show menu bar</strong>
+                <small
+                  >Keep the File, Edit, View, and Help menus visible.</small
+                >
+              </span>
+            </label>
 
-          <!--"Start minimized" checkbox-->
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              id="start-minimized"
-            />
-            <label class="form-check-label" for="start-minimized"
-              >Start application minimized to tray</label
-            >
-          </div>
+            <!--"Start automatically" checkbox-->
+            <label class="setting-option">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="start-automatically"
+              />
+              <span>
+                <strong>Start application automatically at logon</strong>
+                <small
+                  >Launch Voice Desktop when you sign in to your
+                  computer.</small
+                >
+              </span>
+            </label>
 
-          <!--"Exit on close" checkbox-->
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              id="exit-on-close"
-            />
-            <label class="form-check-label" for="exit-on-close"
-              >Exit application when main window is closed</label
-            >
-          </div>
+            <!--"Start minimized" checkbox-->
+            <label class="setting-option">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="start-minimized"
+              />
+              <span>
+                <strong>Start application minimized to tray</strong>
+                <small
+                  >Keep Voice Desktop available without opening the window at
+                  startup.</small
+                >
+              </span>
+            </label>
 
-          <!-- Hide dialer sidebar -->
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              id="hide-dialer-sidebar"
-            />
-            <label class="form-check-label" for="hide-dialer-sidebar"
-              >Hide dialer sidebar</label
-            >
+            <!--"Exit on close" checkbox-->
+            <label class="setting-option">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="exit-on-close"
+              />
+              <span>
+                <strong>Exit application when main window is closed</strong>
+                <small
+                  >Otherwise, closing the window keeps Voice Desktop running in
+                  the tray.</small
+                >
+              </span>
+            </label>
+
+            <!-- Hide dialer sidebar -->
+            <label class="setting-option">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="hide-dialer-sidebar"
+              />
+              <span>
+                <strong>Hide dialer sidebar</strong>
+                <small
+                  >Remove Google Voice's call sidebar from the main application
+                  view.</small
+                >
+              </span>
+            </label>
           </div>
-        </div>
+        </section>
       </div>
 
       <!--Place window buttons in this div.-->
-      <div id="second-row">
+      <footer id="second-row" class="settings-footer">
         <!--"Close" button-->
-        <button
-          type="button"
-          class="btn btn-primary"
-          id="close-button"
-          style="float: right"
-        >
+        <button type="button" class="btn btn-primary" id="close-button">
           Close
         </button>
-      </div>
-    </div>
+      </footer>
+    </main>
+
     <script src="customize.js" type="text/javascript"></script>
   </body>
 </html>
