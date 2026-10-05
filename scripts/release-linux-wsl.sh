@@ -14,15 +14,16 @@ rm -rf dist/linux
 
 # Use dotenv if present
 if [ -f ".env" ]; then
-  npx dotenv -e .env -- electron-builder --linux --x64 --publish always
+    npx dotenv -e .env -- \
+        electron-builder --linux --x64 --publish always
 else
-  npx electron-builder --linux --x64 --publish always
+    npx electron-builder --linux --x64 --publish always
 fi
 
 # Copy artifacts back to Windows repo
 mkdir -p "$WIN_PROJECT/dist/linux"
 cp -f dist/linux/*.AppImage "$WIN_PROJECT/dist/linux/" || true
-cp -f dist/linux/*.yml "$WIN_PROJECT/dist/linux/" 2>/dev/null || true
-cp -f dist/linux/*.blockmap "$WIN_PROJECT/dist/linux/" 2>/dev/null || true
+cp -f dist/linux/*.yml "$WIN_PROJECT/dist/linux/" 2> /dev/null || true
+cp -f dist/linux/*.blockmap "$WIN_PROJECT/dist/linux/" 2> /dev/null || true
 
-echo "Linux release artifacts copied to Windows dist/linux"
+printf '%s\n' 'Linux release artifacts copied to Windows dist/linux'

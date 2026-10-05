@@ -118,45 +118,52 @@ app.on("activate", () => {
   }
 });
 
-app.whenReady().then(async () => {
-  // If the computer is shutting down or restarting then close
-  powerMonitor.on("shutdown", () => {
-    exitApplication();
-  });
-
-  // Setup context menu.  Inspect Element is useful during development but should not be
-  // exposed in packaged builds that display remote Google Voice content.
-  contextMenu({
-    showSaveImage: true,
-    showInspectElement: !app.isPackaged,
-  });
-
-  // Ask for permission to use the microphone if the OS requires it.
-  // macOS system media permission prompts should only be requested after Electron is ready.
-  if (isMac()) {
-    try {
-      console.log("asking for microphone access");
-      await systemPreferences.askForMediaAccess("microphone");
-    } catch (error) {
-      console.error("Unable to request microphone access:", error);
-    }
-  }
-
-  app.dock && app.dock.setIcon(dockIcon);
-
-  createWindow();
-
-  // electron-builder generates the update metadata consumed by electron-updater.
-  // Draft GitHub releases are ignored until they are actually published, which fits
-  // the current build.publish.releaseType configuration.
-  if (app.isPackaged) {
-    autoUpdater.autoDownload = true;
-    autoUpdater.autoInstallOnAppQuit = true;
-    autoUpdater.checkForUpdatesAndNotify().catch((error) => {
-      console.error("Automatic update check failed:", error);
+app
+  .whenReady()
+  .then(async () => {
+    // If the computer is shutting down or restarting then close
+    powerMonitor.on("shutdown", () => {
+      exitApplication();
     });
-  }
-});
+
+    // Setup context menu.  Inspect Element is useful during development but should not be
+    // exposed in packaged builds that display remote Google Voice content.
+    contextMenu({
+      showSaveImage: true,
+      showInspectElement: !app.isPackaged,
+    });
+
+    // Ask for permission to use the microphone if the OS requires it.
+    // macOS system media permission prompts should only be requested after Electron is ready.
+    if (isMac()) {
+      try {
+        console.log("asking for microphone access");
+        await systemPreferences.askForMediaAccess("microphone");
+      } catch (error) {
+        console.error("Unable to request microphone access:", error);
+      }
+    }
+
+    app.dock?.setIcon(dockIcon);
+
+    createWindow();
+
+    // electron-builder generates the update metadata consumed by electron-updater.
+    // Draft GitHub releases are ignored until they are actually published, which fits
+    // the current build.publish.releaseType configuration.
+    if (app.isPackaged) {
+      autoUpdater.autoDownload = true;
+      autoUpdater.autoInstallOnAppQuit = true;
+      try {
+        await autoUpdater.checkForUpdatesAndNotify();
+      } catch (error) {
+        console.error("Automatic update check failed:", error);
+      }
+    }
+  })
+  .catch((error) => {
+    console.error("Application initialization failed:", error);
+  });
 
 // Creates and returns this application's main BrowserWindow, navigated to Google Voice.
 function createWindow() {
@@ -193,14 +200,14 @@ function createWindow() {
         {
           label: "Go to &website",
           click: () => {
-            loadGoogleVoice(true);
+            openGoogleVoiceExternal();
           },
         }, // Open Google Voice externally in the user's browser
         { type: "separator" },
         {
           label: "&Settings",
           click: () => {
-            showSettingsWindow();
+            void showSettingsWindow();
           },
         }, // Open/display our Settings window
         { type: "separator" },
@@ -462,18 +469,19 @@ function exitApplication() {
   app.quit();
 }
 
-// Loads Google Voice.  The "loadExternal" parameter specifies whether the load should
-// take place inside this application's main browser window.  If set to false, Google
-// Voice will be opened in the user's default external browser instead.  During the
+// Loads Google Voice inside this application's main browser window.  During the
 // load, Google Voice itself takes care of asking the user to log in when necessary.
-function loadGoogleVoice(loadExternal = false) {
-  if (loadExternal) {
-    openExternalSafe(constants.URL_GOOGLE_VOICE);
-  } else if (win && !win.isDestroyed()) {
+function loadGoogleVoice() {
+  if (win && !win.isDestroyed()) {
     win.loadURL(constants.URL_GOOGLE_VOICE).catch((error) => {
       console.error("Unable to load Google Voice:", error);
     });
   }
+}
+
+// Opens Google Voice in the user's default external browser.
+function openGoogleVoiceExternal() {
+  openExternalSafe(constants.URL_GOOGLE_VOICE);
 }
 
 // Notification counts are now observed by src/preload.js using a MutationObserver.
@@ -499,9 +507,9 @@ function processNotificationCount(app, count) {
     // Update our notification area icon based on the count.  If it's greater than 0,
     // display the icon with a red dot, otherwise display the icon without a red dot.
     if (count > 0) {
-      tray && tray.setImage(iconTrayDirty);
+      tray?.setImage(iconTrayDirty);
     } else {
-      tray && tray.setImage(iconTray);
+      tray?.setImage(iconTray);
     }
   }
 }
@@ -550,7 +558,7 @@ function processNotificationCount_MacOS(app, oldCount, newCount) {
 }
 
 // Creates this application's notification area icon.
-function createTray(iconPath, tipText) {
+async function createTray(iconPath, tipText) {
   // Create the icon, assigning it our application icon and name.
   let appIcon = new Tray(iconPath);
   appIcon.setToolTip(tipText);
@@ -574,7 +582,7 @@ function createTray(iconPath, tipText) {
       {
         label: "&Settings",
         click: () => {
-          showSettingsWindow();
+          void showSettingsWindow();
         },
       },
       { type: "separator" },
@@ -607,7 +615,7 @@ function showMainWindow() {
 }
 
 // Creates (if it doesn't already exist) this application's "Settings" window, and then displays it to the user.
-function showSettingsWindow() {
+async function showSettingsWindow() {
   if (!settingsWindow) {
     // Create our Settings window, keeping a global reference to it.  This reference allows
     // us to know when the window is open, preventing the user from opening it a second time.
@@ -635,7 +643,7 @@ function showSettingsWindow() {
     // privileged objects directly to the renderer window.
 
     // Load our settings page into the window.
-    settingsWindow.loadFile(
+    await settingsWindow.loadFile(
       path.join(appPath, "src", "pages", "customize.html"),
     );
     //settingsWindow.webContents.openDevTools();
@@ -701,6 +709,7 @@ function isGoogleVoiceUrl(value) {
       parsed.hostname === constants.GOOGLE_VOICE_HOSTNAME
     );
   } catch (error) {
+    console.error(`Invalid Google Voice URL: ${value}`, error);
     return false;
   }
 }
@@ -717,6 +726,7 @@ function isAllowedInternalUrl(value) {
         parsed.hostname === constants.GOOGLE_ACCOUNTS_HOSTNAME)
     );
   } catch (error) {
+    console.error(`Invalid allowed internal URL: ${value}`, error);
     return false;
   }
 }
@@ -738,7 +748,7 @@ function openExternalSafe(value) {
       console.error(`Unable to open external URL: ${value}`, error);
     });
   } catch (error) {
-    console.warn(`Blocked invalid external URL: ${value}`);
+    console.warn(`Blocked invalid external URL: ${value}`, error);
   }
 }
 
@@ -760,6 +770,13 @@ function configureRemoteContentPermissions(ses) {
   ]);
 
   const isPermissionAllowed = (permission, originValue) => {
+    // Electron/Chromium can perform permission checks before navigation has
+    // established a requesting origin. An empty origin should simply be denied
+    // rather than passed to URL(), which would generate a noisy Invalid URL error.
+    if (typeof originValue !== "string" || originValue.trim().length === 0) {
+      return false;
+    }
+
     try {
       const parsed = new URL(originValue);
 
@@ -777,6 +794,11 @@ function configureRemoteContentPermissions(ses) {
 
       return false;
     } catch (error) {
+      console.warn(
+        `Blocked invalid origin for permission check: ${originValue}`,
+        error,
+      );
+
       return false;
     }
   };

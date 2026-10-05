@@ -9,15 +9,15 @@ $active: #30a99b;
 $button: #212425;
 
 // Helper tones (keeps theme consistent everywhere)
-$panel: lighten($background, 3%); // cards / menus
-$hover: lighten($background, 4%); // row hover
-$muted: rgba($foreground, 0.85); // secondary text (brighter than before)
-$muted-2: rgba($foreground, 0.7); // tertiary text (brighter than before)
-$border-strong: lighten($border, 18%); // stronger separators
-$unread-bg: darken($background, 2%);
-$icon-bg: darken($primary, 8%);
+$panel: #1a1d1e; // equivalent to lighten($background, 3%)
+$hover: #1c1f21; // equivalent to lighten($background, 4%)
+$muted: rgba($foreground, 0.85); // secondary text
+$muted-2: rgba($foreground, 0.7); // tertiary text
+$border-strong: #535353; // equivalent to lighten($border, 18%)
+$unread-bg: #0e1011; // equivalent to darken($background, 2%)
+$icon-bg: #003832; // equivalent to darken($primary, 8%)
 
-// Semantic icon colors (kept vivid, but theme-consistent)
+// Semantic icon colors
 $danger: #d93025;
 $info: #1a73e8;
 $success: #1e8e3e;
@@ -82,10 +82,6 @@ a.mat-mdc-list-item.mdc-list-item.mat-mdc-tooltip-trigger.navListItem.mat-mdc-li
   color: $foreground;
 }
 
-span.mat-mdc-button-persistent-ripple.mdc-button__ripple {
-  background-color: rgba($background, 0.925);
-}
-
 .input-row.ng-tns-c2117285075-2 {
   color: $foreground;
   background-color: rgba($background, 0.925);
@@ -106,18 +102,6 @@ input#il1 {
 
 button.mdc-button.mat-mdc-button-base.call-button.ng-tns-c2117285075-2.mat-mdc-button.mat-primary.mat-mdc-button-disabled {
   color: $foreground;
-}
-
-.input-row {
-  gap: 0.5rem;
-}
-
-span.mdc-button__label {
-  color: $foreground;
-}
-
-.dialpad-container {
-  background-color: $background;
 }
 
 button.mdc-button.mat-mdc-button-base.button.mat-mdc-button.mat-unthemed {
@@ -554,6 +538,7 @@ div[ng-class="ctrl.dialpadVisible ? '' : ctrl.CSS.DIALPAD_COLLAPSED"] {
 }
 
 /* Dial-Pad Button Styling Fixes */
+
 span.mat-mdc-button-persistent-ripple.mdc-button__ripple {
   background-color: rgba($background, 0.88);
 }
@@ -576,12 +561,6 @@ span.mdc-button__label {
   [_nghost-ng-c2279346182]
   .container.hovering[_ngcontent-ng-c2279346182] {
   background-color: $selection;
-}
-
-/*google voice app - enter a or number bg, also need to set placeholder text/bg color*/
-.input-row {
-  background-color: $background;
-  gap: 0.5rem;
 }
 
 .group-title {
@@ -715,10 +694,6 @@ section.active-call.ng-tns-c3099836411-1 {
   background-color: $background;
 }
 
-.message-input-container {
-  padding-right: 0.5em;
-}
-
 /* Added padding and proper display colors */
 textarea.cdk-textarea-autosize.message-input.ng-valid.ng-touched.ng-dirty {
   color: white !important;
@@ -737,4 +712,48 @@ mat-card.mat-mdc-card.mdc-card.borderless-card.mat-mdc-card-filled.mdc-card--fil
 
 gv-annotation.primary-text.header-title {
   color: white;
+}
+
+/* More robust: doesn't depend on ng-valid/ng-touched/ng-dirty being present */
+.message-input-container textarea.message-input {
+  background-color: $background !important;
+  color: $foreground !important;
+  padding-left: 2px;
+  border-radius: 5px;
+}
+
+/* Google Voice message composer (current DOM).
+   Keep this independent of Angular form-state classes such as ng-pristine/ng-dirty. */
+gv-message-entry > .root,
+gv-message-entry > .root > .container,
+gv-message-entry .message-input-container {
+  background-color: $background;
+  color: $foreground;
+}
+
+/* The textarea itself is a separate Google-styled surface, so theme it explicitly. */
+gv-message-entry .message-input-container textarea.message-input {
+  background-color: $panel;
+  color: $foreground;
+  caret-color: $foreground;
+  padding-left: 8px;
+  padding-right: 8px;
+  border: 1px solid $border-strong;
+  border-radius: 5px;
+}
+
+/* Do not inherit Google's light-theme placeholder treatment. */
+gv-message-entry .message-input-container textarea.message-input::placeholder {
+  color: $muted-2;
+  opacity: 1;
+}
+
+/* Keep composer action icons legible against the dark footer. */
+gv-message-entry .button-container mat-icon,
+gv-message-entry gv-message-actions mat-icon {
+  color: $foreground;
+}
+
+.inbox-summary-container.ng-star-inserted {
+  background: $background;
 }

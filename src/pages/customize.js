@@ -1,4 +1,4 @@
-(async function () {
+void (async function () {
   // Settings are exposed by settings-preload.js through a narrow contextBridge API.
   // The renderer intentionally does not have direct access to Node.js or ipcRenderer.
   const settingsApi = window.voiceDesktopSettings;
@@ -15,7 +15,7 @@
    * attribute on <html>. customize.css uses this to swap CSS variables.
    */
   function applyTheme(theme) {
-    document.documentElement.setAttribute("data-theme", theme || "default");
+    document.documentElement.dataset.theme = theme || "default";
   }
 
   /**

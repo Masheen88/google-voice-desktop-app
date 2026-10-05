@@ -1,6 +1,6 @@
 const sass = require("sass");
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const BASE = `base.scss`;
 const MAPPINGS = `mappings.scss`;
@@ -119,7 +119,7 @@ module.exports = class Injector {
 
       // Preserve the project's historical behavior of forcing injected theme declarations to win
       // against Google Voice's own styles.  Theme files can still use explicit !important rules too.
-      const styles = result.css.replace(/;/g, " !important;");
+      const styles = result.css.replace(/(?<!!important);/g, " !important;");
 
       if (
         !this.win ||

@@ -2,6 +2,7 @@
   "name": "voice-desktop-app",
   "version": "1.4.0",
   "description": "An electron shell wrapper for the google voice app",
+  "type": "commonjs",
   "main": "src/main.js",
   "repository": {
     "type": "git",

@@ -10,7 +10,7 @@
 
 const { ipcRenderer } = require("electron");
 const constants = require("../constants.js");
-const path = require("path");
+const path = require("node:path");
 
 module.exports.notificationShim = function (appPath) {
   const OldNotification = Notification;
@@ -23,7 +23,7 @@ module.exports.notificationShim = function (appPath) {
       options.icon = path.join(
         appPath,
         "images",
-        constants.APPLICATION_ICON_MEDIUM
+        constants.APPLICATION_ICON_MEDIUM,
       );
     }
 
