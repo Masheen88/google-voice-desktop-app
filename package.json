@@ -1,6 +1,6 @@
 {
   "name": "voice-desktop-app",
-  "version": "1.4.0",
+  "version": "1.4.5",
   "description": "An electron shell wrapper for the google voice app",
   "type": "commonjs",
   "main": "src/main.js",
@@ -11,6 +11,20 @@
   "build": {
     "appId": "com.jerrkawz.voiceDesktop",
     "productName": "Voice Desktop",
+    "asar": true,
+    "compression": "maximum",
+    "electronLanguages": [
+      "en-US"
+    ],
+    "files": [
+      "src/**/*",
+      "images/**/*",
+      "!src/themes/**/*.scss",
+      "!**/*.map",
+      "!**/*.d.ts",
+      "!**/node_modules/**/*.md",
+      "!**/node_modules/**/{docs,doc,benchmark,benchmarks}/**/*"
+    ],
     "directories": {
       "output": "dist/${os}",
       "buildResources": "build"
@@ -27,8 +41,15 @@
       "installerHeaderIcon": "build/icon.ico",
       "shortcutName": "Voice Desktop",
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "oneClick": true,
+      "perMachine": false,
+      "installerLanguages": [
+        "en_US"
+      ],
+      "differentialPackage": true
     },
+    "npmRebuild": false,
     "mac": {
       "category": "public.app-category.social-networking",
       "extendInfo": {
@@ -51,20 +72,44 @@
         "repo": "google-voice-desktop-app",
         "releaseType": "draft"
       }
-    ]
+    ],
+    "nsisWeb": {
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "shortcutName": "Voice Desktop",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "oneClick": true,
+      "perMachine": false,
+      "installerLanguages": [
+        "en_US"
+      ],
+      "differentialPackage": true,
+      "artifactName": "${productName}-Web-Setup-${version}.${ext}"
+    }
   },
   "scripts": {
+    "build:themes": "node scripts/build-themes.cjs",
+    "prestart": "pnpm run build:themes",
     "start": "electron .",
+    "predev": "pnpm run build:themes",
     "dev": "electronmon .",
+    "version:bump": "node scripts/bump-version.cjs",
     "postinstall": "electron-builder install-app-deps",
-    "build:windows": "electron-builder --windows",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux",
-    "build:x64": "electron-builder --mac --windows --linux --x64",
-    "build:arm64": "electron-builder --mac --windows --linux --arm64",
-    "release:windows": "dotenv electron-builder --win --x64 --publish always",
-    "release:linux": "wsl -d Ubuntu bash -lc \"/mnt/g/Custom_Projects/Custom_Apps/google-voice-desktop-app/scripts/release-linux-wsl.sh\"",
-    "release": "electron-builder --windows --linux --x64 --arm64 --publish always"
+    "build:windows": "pnpm run version:bump && pnpm run build:themes && electron-builder --win nsis --x64",
+    "build:windows:web": "pnpm run version:bump && pnpm run build:themes && electron-builder --win nsis-web --x64",
+    "build:windows:offline": "pnpm run version:bump && pnpm run build:themes && electron-builder --win nsis --x64",
+    "build:mac": "pnpm run version:bump && pnpm run build:themes && electron-builder --mac",
+    "build:linux": "pnpm run version:bump && pnpm run build:themes && electron-builder --linux --x64",
+    "build:x64": "pnpm run version:bump && pnpm run build:themes && electron-builder --mac --windows --linux --x64",
+    "build:arm64": "pnpm run version:bump && pnpm run build:themes && electron-builder --mac --windows --linux --arm64",
+    "release:windows": "pnpm run version:bump && pnpm run build:themes && dotenv -e .env -- electron-builder --win nsis --x64 --publish always",
+    "release:windows:web": "pnpm run version:bump && pnpm run build:themes && dotenv -e .env -- electron-builder --win nsis-web --x64 --publish always",
+    "release:linux": "pnpm run version:bump && pnpm run build:themes && wsl -d Ubuntu bash -lc \"/mnt/g/Custom_Projects/Custom_Apps/google-voice-desktop-app/scripts/release-linux-wsl.sh\"",
+    "release": "pnpm run version:bump && pnpm run build:themes && electron-builder --windows --linux --x64 --arm64 --publish always",
+    "size:windows": "node scripts/report-build-size.cjs",
+    "build:windows:small": "pnpm run version:bump && pnpm run build:themes && electron-builder --win nsis-web --x64"
   },
   "keywords": [
     "electron",
@@ -76,16 +121,17 @@
   "author": "jllankfo@ncsu.edu",
   "license": "ISC",
   "dependencies": {
-    "auto-launch": "^5.0.6",
-    "electron-context-menu": "^4.1.1",
-    "electron-store": "^11.0.2",
-    "electron-updater": "^6.8.9",
-    "sass": "^1.94.2"
+    "electron-updater": "^6.8.9"
   },
   "devDependencies": {
     "dotenv-cli": "^11.0.0",
     "electron": "^39.2.3",
     "electron-builder": "^26.0.12",
-    "electronmon": "^2.0.4"
+    "electronmon": "^2.0.4",
+    "sass": "^1.94.2"
+  },
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=22.13.0"
   }
 }

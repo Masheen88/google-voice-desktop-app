@@ -7,3 +7,4 @@ dist/
 .env
 
 _tpm*
+src/themes-compiled/

@@ -1,9 +1,8 @@
-const sass = require("sass");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const BASE = `base.scss`;
-const MAPPINGS = `mappings.scss`;
+const BASE = "base.scss";
+const MAPPINGS = "mappings.scss";
 const HIDE_DIALER_SIDEBAR_CSS = `gv-call-sidebar { display: none !important; }`;
 
 module.exports = class Injector {
@@ -38,7 +37,7 @@ module.exports = class Injector {
       try {
         await this.win.webContents.removeInsertedCSS(existingKey);
       } catch (error) {
-        // Navigations can invalidate old style keys.  There is nothing else to clean up in that case.
+        // Navigations can invalidate old style keys. There is nothing else to clean up in that case.
       }
     }
 
@@ -61,7 +60,11 @@ module.exports = class Injector {
   }
 
   /**
-   * Compiles and injects one of the local application themes.
+   * Injects one of the local application themes.
+   *
+   * Development compiles SCSS on demand so theme edits remain easy to test.
+   * Packaged builds load precompiled CSS so Sass and its dependency tree are not
+   * shipped inside the application.
    *
    * @param {string} theme
    */
@@ -77,7 +80,7 @@ module.exports = class Injector {
       try {
         await this.win.webContents.removeInsertedCSS(existingKey);
       } catch (error) {
-        // The page may have navigated since the key was created.  Old inserted CSS is already gone in that case.
+        // The page may have navigated since the key was created. Old inserted CSS is already gone in that case.
       }
     }
 
@@ -85,7 +88,7 @@ module.exports = class Injector {
       return;
     }
 
-    // Only allow simple local theme names.  The main process validates against SUPPORTED_THEMES too,
+    // Only allow simple local theme names. The main process validates against SUPPORTED_THEMES too,
     // but keeping validation here protects this utility if it is reused elsewhere later.
     if (!/^[a-z0-9_-]+$/i.test(theme)) {
       console.error(`Rejected invalid theme name: ${theme}`);
@@ -93,33 +96,9 @@ module.exports = class Injector {
     }
 
     try {
-      const themesDir = path.join(this.app.getAppPath(), "src", "themes");
-      const themePath = path.join(themesDir, `${theme}.scss`);
-
-      // Resolve the path and verify it is still inside the themes directory before reading from disk.
-      const resolvedThemesDir = path.resolve(themesDir);
-      const resolvedThemePath = path.resolve(themePath);
-      if (!resolvedThemePath.startsWith(`${resolvedThemesDir}${path.sep}`)) {
-        throw new Error(
-          `Resolved theme path escaped themes directory: ${theme}`,
-        );
-      }
-
-      const file = fs.readFileSync(resolvedThemePath, "utf-8");
-
-      // Inline base + mappings so Sass sees one combined file (preserves old @import behavior)
-      const data = joinImports(this.app, file);
-
-      // Use Sass's modern compileString API instead of the deprecated legacy renderSync API.
-      // loadPaths lets Sass resolve any leftover imports safely.
-      const result = sass.compileString(data, {
-        loadPaths: [themesDir],
-        style: "expanded",
-      });
-
-      // Preserve the project's historical behavior of forcing injected theme declarations to win
-      // against Google Voice's own styles.  Theme files can still use explicit !important rules too.
-      const styles = result.css.replace(/(?<!!important);/g, " !important;");
+      const styles = this.app.isPackaged
+        ? loadCompiledTheme(this.app, theme)
+        : compileDevelopmentTheme(this.app, theme);
 
       if (
         !this.win ||
@@ -139,38 +118,74 @@ module.exports = class Injector {
       }
     } catch (error) {
       console.error(error);
-      console.error(`Could not find or compile theme ${theme}`);
+      console.error(`Could not find or load theme ${theme}`);
     }
   }
 };
 
+function loadCompiledTheme(app, theme) {
+  const themesDir = path.join(app.getAppPath(), "src", "themes-compiled");
+  const themePath = resolveThemePath(themesDir, theme, ".css");
+  return fs.readFileSync(themePath, "utf8");
+}
+
+function compileDevelopmentTheme(app, theme) {
+  // Sass is deliberately a devDependency. This lazy require is never executed
+  // in packaged builds, which keeps Sass out of the shipped node_modules tree.
+  const sass = require("sass");
+  const themesDir = path.join(app.getAppPath(), "src", "themes");
+  const themePath = resolveThemePath(themesDir, theme, ".scss");
+  const file = fs.readFileSync(themePath, "utf8");
+  const data = joinImports(app, file);
+
+  const result = sass.compileString(data, {
+    loadPaths: [themesDir],
+    style: "expanded",
+  });
+
+  return forceImportant(result.css);
+}
+
+function resolveThemePath(themesDir, theme, extension) {
+  const themePath = path.join(themesDir, `${theme}${extension}`);
+  const resolvedThemesDir = path.resolve(themesDir);
+  const resolvedThemePath = path.resolve(themePath);
+
+  if (!resolvedThemePath.startsWith(`${resolvedThemesDir}${path.sep}`)) {
+    throw new Error(`Resolved theme path escaped themes directory: ${theme}`);
+  }
+
+  return resolvedThemePath;
+}
+
+function forceImportant(css) {
+  // Preserve the project's historical behavior of forcing injected theme declarations to win
+  // against Google Voice's own styles. Theme files can still use explicit !important rules too.
+  return css.replace(/(?<!!important);/g, " !important;");
+}
+
 /**
- * The way sass processes use/import functions just isn't good enough for this project:
- *  - We need variables that scope across files
- *  - We want to split selectors and placeholder selectors into different files
- *
- * So we recombine multiple files into one string and then let Sass process that.
+ * The theme files intentionally share variables and placeholder selectors across
+ * base.scss and mappings.scss. Recombine them into one Sass source string before
+ * compilation so the old global-variable behavior remains intact.
  */
 function joinImports(app, file) {
   const themesDir = path.join(app.getAppPath(), "src", "themes");
-  const base = fs.readFileSync(path.join(themesDir, BASE), "utf-8");
-  const mappings = fs.readFileSync(path.join(themesDir, MAPPINGS), "utf-8");
+  const base = fs.readFileSync(path.join(themesDir, BASE), "utf8");
+  const mappings = fs.readFileSync(path.join(themesDir, MAPPINGS), "utf8");
 
   let contents = file;
 
-  // Replace either @base or @import of base (single/double quotes, optional .scss, optional semicolon)
   contents = contents.replaceAll(
     /@(?:use|import)\s+["']base(?:\.scss)?["']\s*;?/g,
     base,
   );
 
-  // Replace mappings directives anywhere (including those inside base)
   contents = contents.replaceAll(
     /@(?:use|import)\s+["']mappings(?:\.scss)?["']\s*;?/g,
     mappings,
   );
 
-  // Strip any leftover base/mappings imports that may exist inside inserted files
   contents = contents.replaceAll(
     /@(?:use|import)\s+["']base(?:\.scss)?["']\s*;?/g,
     "",

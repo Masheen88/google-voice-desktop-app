@@ -93,3 +93,20 @@ To build yourself you can run
 
 - Dracula: [https://github.com/dracula/dracula-theme](https://github.com/dracula/dracula-theme)
 - Solar / Minty / Cerulean: [https://bootswatch.com/](https://bootswatch.com/)
+
+## Optimized builds
+
+This fork keeps the packaged Electron payload as small as practical without removing Google Voice calling/media support.
+
+- `pnpm build:windows` builds the fully offline x64 NSIS installer.
+- `pnpm build:windows:web` (or `pnpm build:windows:small`) builds an NSIS Web bootstrap installer. The `.exe` is dramatically smaller because it downloads the application package during installation.
+- `pnpm release:windows:web` publishes the web installer and its package files to the configured GitHub release provider.
+- `pnpm size:windows` prints the largest files in `dist/win` after a Windows build.
+
+Every build command above automatically increments the patch version before packaging. Themes are precompiled before development and release builds so Sass is not shipped inside the application. The app also uses small local implementations for preferences, context menus, and launch-at-login instead of packaging the previous runtime dependency trees.
+
+The offline installer still contains the Electron/Chromium runtime, so its size has a relatively high floor even after the application payload itself is minimized. Use the Web installer when the size of the downloadable `.exe` is the primary concern.
+
+### Publishing credentials
+
+The project archive intentionally does not include a real `.env` file. Copy `.env.example` to `.env` and set `GH_TOKEN` locally when publishing GitHub releases.

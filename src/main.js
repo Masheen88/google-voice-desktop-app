@@ -13,24 +13,16 @@ const {
   systemPreferences,
 } = require("electron");
 const constants = require("./constants");
-const AutoLaunch = require("auto-launch");
-
-const contextMenuModule = require("electron-context-menu");
-// electron-context-menu is ESM-exported now, so grab default if present.
-const contextMenu = contextMenuModule.default ?? contextMenuModule;
-
 const BadgeGenerator = require("./badge_generator");
 const path = require("node:path");
 const CSSInjector = require("./utils/cssInjector");
-
-const StoreModule = require("electron-store");
-const Store = StoreModule.default ?? StoreModule;
-
+const PreferencesStore = require("./utils/preferencesStore");
+const AutoLaunch = require("./utils/autoLaunch");
+const configureContextMenu = require("./utils/contextMenu");
 const { pathToFileURL } = require("node:url");
-const { autoUpdater } = require("electron-updater");
 
 // Constants
-const store = new Store();
+const store = new PreferencesStore(app);
 const appPath = app.getAppPath();
 const icon = path.join(appPath, "images", constants.APPLICATION_ICON_MEDIUM);
 const iconTray = path.join(appPath, "images", constants.APPLICATION_ICON_SMALL);
@@ -126,13 +118,6 @@ app
       exitApplication();
     });
 
-    // Setup context menu.  Inspect Element is useful during development but should not be
-    // exposed in packaged builds that display remote Google Voice content.
-    contextMenu({
-      showSaveImage: true,
-      showInspectElement: !app.isPackaged,
-    });
-
     // Ask for permission to use the microphone if the OS requires it.
     // macOS system media permission prompts should only be requested after Electron is ready.
     if (isMac()) {
@@ -152,8 +137,13 @@ app
     // Draft GitHub releases are ignored until they are actually published, which fits
     // the current build.publish.releaseType configuration.
     if (app.isPackaged) {
+      // Load the updater only in packaged builds so development startup stays lean.
+      const { autoUpdater } = require("electron-updater");
       autoUpdater.autoDownload = true;
       autoUpdater.autoInstallOnAppQuit = true;
+      // Keep NSIS Web releases compatible with future electron-updater defaults.
+      autoUpdater.disableWebInstaller = false;
+
       try {
         await autoUpdater.checkForUpdatesAndNotify();
       } catch (error) {
@@ -184,6 +174,14 @@ function createWindow() {
       webviewTag: false,
     },
   });
+
+  // Provide the small context menu feature set we actually use without shipping
+  // the electron-context-menu dependency tree in production builds.
+  configureContextMenu(win, {
+    allowInspect: !app.isPackaged,
+    allowSaveImage: true,
+  });
+
   //win.webContents.openDevTools();
 
   // Create the window's menu bar.
@@ -638,6 +636,10 @@ async function showSettingsWindow() {
       },
     });
     settingsWindow.removeMenu();
+    configureContextMenu(settingsWindow, {
+      allowInspect: !app.isPackaged,
+      allowSaveImage: false,
+    });
 
     // Settings are exposed through a narrow preload/contextBridge API instead of attaching
     // privileged objects directly to the renderer window.
@@ -660,7 +662,7 @@ async function showSettingsWindow() {
 
 function saveWindowSize() {
   // Resize can fire dozens of times while the user drags the window.  Debounce the disk write
-  // so electron-store is not updated on every individual resize event.
+  // so the preferences file is not rewritten on every individual resize event.
   clearTimeout(saveWindowSizeTimer);
 
   saveWindowSizeTimer = setTimeout(() => {
@@ -865,13 +867,8 @@ ipcMain.handle("get-user-prefs", (event) => {
 ipcMain.handle("get-start-automatically", async (event) => {
   assertSettingsWindowSender(event);
 
-  const autoLaunch = new AutoLaunch({
-    name: constants.APPLICATION_NAME,
-    path: app.getPath("exe"),
-  });
-
   try {
-    return await autoLaunch.isEnabled();
+    return AutoLaunch.isEnabled(app, constants.APPLICATION_ID);
   } catch (error) {
     console.error("Unable to read auto-launch state:", error);
     return false;
@@ -944,17 +941,15 @@ ipcMain.on(
     console.log(`"Start Automatically" changed to: ${startAutomatically}`);
 
     // Register/unregister this application to be automatically started at logon.
-    const autoLaunch = new AutoLaunch({
-      name: constants.APPLICATION_NAME,
-      path: app.getPath("exe"),
-    });
-
+    // Electron handles Windows/macOS natively; our tiny helper writes the
+    // freedesktop autostart entry on Linux.
     try {
-      if (startAutomatically) {
-        await autoLaunch.enable();
-      } else {
-        await autoLaunch.disable();
-      }
+      AutoLaunch.setEnabled(
+        app,
+        constants.APPLICATION_ID,
+        constants.APPLICATION_NAME,
+        startAutomatically,
+      );
     } catch (error) {
       console.error("Unable to update auto-launch state:", error);
     }

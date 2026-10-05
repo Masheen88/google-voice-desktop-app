@@ -9,7 +9,7 @@ $selection: #839496;
 // Extra theme helpers (kept lightweight + palette-based)
 $border: rgba($foreground, 0.12);
 $active: $primary;
-$unread-bg: darken($background, 4%);
+$unread-bg: #001b22; // equivalent to darken($background, 4%)
 
 @import "base";
 

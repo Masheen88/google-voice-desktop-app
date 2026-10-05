@@ -3,12 +3,14 @@
 So you want to add a theme? Themeing google voice is fairly complex, I tried to modularize it as much as possible so that other people could add themes. Theres several different levels of creating a theme.
 If all you want to do is create a theme that looks like one of the existing themes then:
 
+> Theme SCSS is compiled to `src/themes-compiled/` before packaged builds. Sass remains a development-only dependency so it is not shipped in the Electron installer. During development, the app can also compile SCSS on demand so theme edits remain easy to test.
+
 1. Setup a fork of this repository
-2. Run `npm install` to fetch dependencies
+2. Run `pnpm install` to fetch dependencies
 3. Then just copy that themes `src/themes/.scss` file and create a new theme with a new name
 4. Modify the color palette with the colors that you want.
 5. Then go into `src/pages/customize.html` and add a new option tag like so `<option value="THEME FILE NAME WITHOUT .scss">THEME NAME</option>`
-6. Run `npm run start` to start the app and test your theme
+6. Run `pnpm start` to compile the themes and start the app for testing
 
 ## Building a custom theme
 

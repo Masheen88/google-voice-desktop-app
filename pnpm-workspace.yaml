@@ -1,4 +1,8 @@
 allowBuilds:
-  '@parcel/watcher': true
+  "@parcel/watcher": true
   electron: true
   electron-winstaller: true
+
+verifyDepsBeforeRun: false
+
+storeDir: "G:/.pnpm-store"

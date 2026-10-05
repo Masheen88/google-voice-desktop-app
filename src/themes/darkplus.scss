@@ -25,6 +25,17 @@ $success: #1e8e3e;
 @import "base";
 
 /* =========================
+   Global DarkPlus surface
+   ========================= */
+
+html,
+body,
+.gvPageRoot {
+  background-color: $background !important;
+  color: $foreground !important;
+}
+
+/* =========================
    Global base
    ========================= */
 
@@ -639,7 +650,8 @@ span[xapautoid].title.content {
 
 .gvPageRoot[_nghost-ng-c1815221090] .dnd-status[_ngcontent-ng-c1815221090],
 .gvPageRoot [_nghost-ng-c1815221090] .dnd-status[_ngcontent-ng-c1815221090] {
-  background-color: #f1f3f4;
+  background-color: $selection;
+  color: $foreground;
 }
 
 /* before and after
