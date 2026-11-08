@@ -165,6 +165,27 @@
             </label>
           </div>
         </section>
+        <!-- Floating controller for in-browser Google Voice calls. -->
+        <section class="settings-card" aria-labelledby="mini-call-heading">
+          <div class="section-heading">
+            <div>
+              <h2 id="mini-call-heading">Floating mini call controller</h2>
+              <p>Keep call controls available above other windows, including while Voice Desktop is minimized.</p>
+            </div>
+          </div>
+          <div class="settings-options">
+            <label class="setting-option">
+              <input class="form-check-input" type="checkbox" id="mini-call-enabled" />
+              <span><strong>Automatically show on calls</strong><small>Open a compact controller for detected incoming and outgoing Google Voice calls.</small></span>
+            </label>
+            <label class="setting-option">
+              <input class="form-check-input" type="checkbox" id="mini-call-always-top" />
+              <span><strong>Always on top</strong><small>Keep the controller visible while using other Windows applications.</small></span>
+            </label>
+          </div>
+          <button type="button" class="btn btn-secondary" id="mini-call-preview">Preview mini call controller</button>
+          <p class="field-help">The 1 and 2 buttons click Google Voice's native in-call keypad without leaving it open. On screened incoming calls, click Answer first. When Google's keypad can't be detected, use the full Google Voice window (Ctrl+Shift+M).</p>
+        </section>
         <!-- GIF search / attachment integration -->
         <section class="settings-card" aria-labelledby="gif-heading">
           <div class="section-heading">

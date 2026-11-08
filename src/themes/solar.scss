@@ -13,6 +13,17 @@ $unread-bg: #001b22; // equivalent to darken($background, 4%)
 
 @import "base";
 
+/* Google Voice header/contact titles and account status can inherit the light-theme
+   colors. Scope these overrides to dark themes, preserving semantic SVG icon colors. */
+span.title {
+  color: $foreground !important;
+}
+
+span.gb_2d.gb_Bd {
+  color: #34a853 !important;
+}
+
+
 %side-nav {
   border-right: 1px solid $border;
 }
@@ -433,7 +444,7 @@ section.active-call.ng-tns-c3099836411-1 {
 
 /* Added padding and proper display colors */
 textarea.cdk-textarea-autosize.message-input.ng-valid.ng-touched.ng-dirty {
-  color: black !important;
+  color: $foreground !important; // Keep message text readable on this dark surface
   padding-left: 2px;
   background-color: $background !important;
   border-radius: 5px;

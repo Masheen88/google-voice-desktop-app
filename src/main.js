@@ -13,6 +13,7 @@ const {
   systemPreferences,
   screen,
   dialog,
+  clipboard,
 } = require("electron");
 const constants = require("./constants");
 const BadgeGenerator = require("./badge_generator");
@@ -48,6 +49,13 @@ let cssInjector;
 let tray;
 let win; // The main application window
 let settingsWindow; // When not null, the "Settings" window, which is currently open
+let miniCallWindow; // Native always-on-top controller for incoming and outgoing calls
+let miniCallState = { phase: "idle" };
+let miniCallStartedAt = 0;
+let miniCallHiddenForCurrentCall = false;
+let miniCallPreview = false;
+let miniCallNextActionId = 0;
+const miniCallPendingActions = new Map();
 let gifPickerWindow; // Local, frameless in-app picker (not a Google Voice web page)
 let gifPickerStyleKey = null;
 let gifPickerDialogOpen = false;
@@ -182,6 +190,8 @@ function createWindow() {
       contextIsolation: true,
       sandbox: true,
       webviewTag: false,
+      // Incoming calls and their DOM transitions must keep working while the Voice window is in the tray.
+      backgroundThrottling: false,
     },
   });
 
@@ -218,6 +228,11 @@ function createWindow() {
             void showSettingsWindow();
           },
         }, // Open/display our Settings window
+        {
+          label: "Mini &call controller",
+          accelerator: "CommandOrControl+Shift+M",
+          click: () => { void showMiniCallController({ manual: true }); },
+        }, // Manually reopen the floating controller, or preview the idle state.
         {
           label: "&GIF picker",
           accelerator: "CommandOrControl+Shift+G",
@@ -427,6 +442,11 @@ function createWindow() {
 
   // If Chromium's renderer process crashes, reload the known-safe Google Voice entry point instead
   // of leaving the user with a dead window.
+  win.webContents.on('did-start-navigation', (_event, navigationInfo) => {
+    // A full navigation/reload invalidates the previous call controls; let the new preload rediscover them.
+    if (navigationInfo?.isMainFrame !== false) miniCallSetState({ phase: 'idle' });
+  });
+
   win.webContents.on("render-process-gone", (event, details) => {
     console.error("Google Voice renderer process exited:", details);
 
@@ -474,6 +494,10 @@ function createWindow() {
   win.on("resize", saveWindowSize);
 
   win.on("closed", () => {
+    // Closing the authenticated Voice window also invalidates any floating call controls.
+    miniCallState = { phase: "idle" };
+    miniCallStartedAt = 0;
+    if (miniCallWindow && !miniCallWindow.isDestroyed()) miniCallWindow.close();
     if (gifPickerWindow && !gifPickerWindow.isDestroyed()) gifPickerWindow.close();
     gifPickerStyleKey = null;
     win = null;
@@ -613,6 +637,10 @@ async function createTray(iconPath, tipText) {
         click: () => {
           void showSettingsWindow();
         },
+      },
+      {
+        label: "Mini call controller",
+        click: () => { void showMiniCallController({ manual: true }); },
       },
       { type: "separator" },
       {
@@ -1022,6 +1050,218 @@ ipcMain.on("pref-change-hide-dialer-sidebar", (event, hideDialerSidebar) => {
     cssInjector.showHideDialerSidebar(hideDialerSidebar);
   }
   store.set("prefs.hideDialerSidebar", hideDialerSidebar);
+});
+
+// ====================================================================================================================
+// Floating mini call controller. All live actions go through Google's existing UI in the main preload.
+// ====================================================================================================================
+
+/** Validate the sender of every action. The Google Voice renderer never receives the controller bridge. */
+function isMiniCallWindowSender(event) {
+  return !!(miniCallWindow && !miniCallWindow.isDestroyed() && event.sender === miniCallWindow.webContents);
+}
+
+/** Store a small, primitive-only snapshot; do not pass arbitrary remote page HTML to local pages. */
+function sanitizeMiniCallSnapshot(value) {
+  if (!value || typeof value !== 'object' || !['incoming', 'outgoing', 'screening', 'active', 'idle'].includes(value.phase)) return null;
+  if (value.phase === 'idle') return { phase: 'idle' };
+  const party = typeof value.party === 'string' ? value.party.replace(/[\x00-\x1F\x7F]/g, ' ').trim().slice(0, 85) : '';
+  const clean = { phase: value.phase, party,
+    direction: ['incoming', 'outgoing'].includes(value.direction) ? value.direction : 'unknown' };
+  for (const key of ['canAnswer', 'canDecline', 'canHangup', 'canMute', 'muted', 'canKeypad', 'awaitingScreening']) clean[key] = value[key] === true;
+  return clean;
+}
+
+function miniCallSendState() {
+  if (!miniCallWindow || miniCallWindow.isDestroyed() || miniCallWindow.webContents.isLoadingMainFrame()) return;
+  const preview = miniCallPreview && miniCallState.phase === 'idle';
+  miniCallWindow.webContents.send('mini-call-update', preview
+    ? { phase: 'incoming', party: 'Test incoming call', preview: true, canAnswer: true, canDecline: true, canKeypad: false }
+    : { ...miniCallState, since: miniCallStartedAt });
+}
+
+/** Choose a visible work area and keep user-customized positions on-screen after monitor changes. */
+function miniCallInitialBounds(height = 312) {
+  const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  const work = display.workArea;
+  const width = 346;
+  const saved = store.get('prefs.miniCallPosition', null);
+  const fits = saved && Number.isInteger(saved.x) && Number.isInteger(saved.y) &&
+    saved.x >= work.x && saved.x + width <= work.x + work.width &&
+    saved.y >= work.y && saved.y + height <= work.y + work.height;
+  return { x: fits ? saved.x : work.x + work.width - width - 16,
+    y: fits ? saved.y : work.y + 22, width, height };
+}
+
+function miniCallResizeForPhase() {
+  if (!miniCallWindow || miniCallWindow.isDestroyed()) return;
+  const height = miniCallState.phase === 'incoming' || miniCallPreview ? 362 : 312;
+  if (miniCallWindow.getBounds().height !== height) {
+    const bounds = miniCallWindow.getBounds();
+    const nearest = screen.getDisplayMatching(bounds).workArea;
+    miniCallWindow.setBounds({ ...bounds, y: Math.min(bounds.y, nearest.y + nearest.height - height), height });
+  }
+}
+
+async function showMiniCallController({ manual = false, preview = false } = {}) {
+  if (store.get('prefs.miniCallEnabled', true) === false) return;
+  if (preview && miniCallState.phase === 'idle') miniCallPreview = true;
+  if (manual) miniCallHiddenForCurrentCall = false;
+  if (!miniCallWindow || miniCallWindow.isDestroyed()) {
+    const bounds = miniCallInitialBounds(miniCallState.phase === 'incoming' || miniCallPreview ? 362 : 312);
+    miniCallWindow = new BrowserWindow({
+      ...bounds,
+      title: 'Voice Desktop · Mini Call',
+      icon,
+      show: false,
+      frame: false,
+      transparent: false,
+      resizable: false,
+      maximizable: false,
+      minimizable: false,
+      fullscreenable: false,
+      skipTaskbar: true,
+      alwaysOnTop: store.get('prefs.miniCallAlwaysOnTop', true) !== false,
+      backgroundColor: '#0b1222',
+      webPreferences: {
+        preload: path.join(__dirname, 'mini-call-preload.js'),
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        webviewTag: false,
+      },
+    });
+    miniCallWindow.setMenu(null);
+    miniCallWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    miniCallWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+    miniCallWindow.on('moved', () => {
+      if (miniCallWindow && !miniCallWindow.isDestroyed()) {
+        const { x, y } = miniCallWindow.getBounds();
+        store.set('prefs.miniCallPosition', { x, y });
+      }
+    });
+    miniCallWindow.on('closed', () => { miniCallWindow = null; });
+    await miniCallWindow.loadFile(path.join(__dirname, 'pages', 'mini-call.html'));
+  }
+  if (!miniCallWindow || miniCallWindow.isDestroyed()) return;
+  miniCallResizeForPhase();
+  miniCallSendState();
+  miniCallWindow.showInactive(); // Keep focus in VS Code, REAPER, or the active desktop app.
+}
+
+function miniCallSetState(nextState) {
+  const wasLive = miniCallState.phase !== 'idle';
+  const isLive = nextState.phase !== 'idle';
+  miniCallState = nextState;
+  if (!wasLive && isLive) {
+    miniCallStartedAt = Date.now();
+    miniCallHiddenForCurrentCall = false;
+    miniCallPreview = false;
+  }
+  if (!isLive) {
+    miniCallStartedAt = 0;
+    miniCallHiddenForCurrentCall = false;
+    miniCallPreview = false;
+    if (miniCallWindow && !miniCallWindow.isDestroyed()) miniCallWindow.hide();
+    return;
+  }
+  miniCallResizeForPhase();
+  miniCallSendState();
+  if (store.get('prefs.miniCallEnabled', true) !== false && !miniCallHiddenForCurrentCall) {
+    void showMiniCallController().catch((error) => console.error('Mini call controller failed to open:', error));
+  }
+}
+
+ipcMain.on('mini-call-observed', (event, snapshot) => {
+  if (!isMainWindowSender(event) || !isGoogleVoiceUrl(event.sender.getURL())) return;
+  const clean = sanitizeMiniCallSnapshot(snapshot);
+  if (clean) miniCallSetState(clean);
+});
+
+ipcMain.handle('mini-call-ready', (event) => {
+  if (!isMiniCallWindowSender(event)) throw new Error('Untrusted mini call controller.');
+  const preview = miniCallPreview && miniCallState.phase === 'idle';
+  return preview ? { phase: 'incoming', party: 'Test incoming call', preview: true, canAnswer: true, canDecline: true }
+    : { ...miniCallState, since: miniCallStartedAt };
+});
+
+ipcMain.handle('mini-call-action', async (event, action) => {
+  if (!isMiniCallWindowSender(event)) throw new Error('Untrusted mini call controller.');
+  if (action === 'open-main') { showMainWindow(); return { ok: true }; }
+  if (action === 'hide') {
+    miniCallHiddenForCurrentCall = true;
+    miniCallPreview = false;
+    if (miniCallWindow && !miniCallWindow.isDestroyed()) miniCallWindow.hide();
+    return { ok: true };
+  }
+  if (!['answer', 'decline', 'hangup', 'mute', 'tone-1', 'tone-2', 'show-keypad', 'copy-diagnostics'].includes(action)) {
+    return { ok: false, message: 'Unsupported mini call action.' };
+  }
+  if (miniCallState.phase === 'idle' || !win || win.isDestroyed() || !isGoogleVoiceUrl(win.webContents.getURL())) {
+    return { ok: false, message: 'No active Google Voice call to control.' };
+  }
+  // The snapshot is advisory and often gets stale as Google's Angular call UI re-renders.
+  // Forward call actions to the preload, which re-discovers the CURRENT live call panel.
+  // Only block clearly wrong stages; never disable Hang Up merely because it was previously
+  // rendered as an unlabelled Material icon.
+  if (action.startsWith('tone-') && miniCallState.phase === 'incoming') {
+    return { ok: false, message: 'Answer the incoming call before pressing a screening digit.' };
+  }
+  if (action === 'answer' && miniCallState.phase !== 'incoming') {
+    return { ok: false, message: 'The call is no longer at the initial answer step.' };
+  }
+  // For Show Keypad, ask the preload to look again even if its last snapshot said unavailable.
+  // If no current native keypad is found, fall back to bringing the main Google Voice window forward.
+  return new Promise((resolve) => {
+    const id = ++miniCallNextActionId;
+    const timeout = setTimeout(() => {
+      miniCallPendingActions.delete(id);
+      resolve({ ok: false, message: 'Google Voice did not confirm that the control was activated. Use the main window.' });
+    }, 5500);
+    miniCallPendingActions.set(id, (result) => {
+      clearTimeout(timeout);
+      if (action === 'copy-diagnostics' && result.ok === true && typeof result.diagnostics === 'string') {
+        // The diagnostic payload is constructed from a fixed allowlist inside the Voice preload.
+        clipboard.writeText(result.diagnostics.slice(0, 3000));
+        resolve({ ok: true, message: 'Control diagnostics copied to clipboard.' });
+      } else if (action === 'show-keypad' && result.ok !== true) {
+        // Open the real Google Voice UI when its in-call keypad could not be located.
+        // Do not claim that a tone was transmitted or that the keypad was opened.
+        showMainWindow();
+        resolve({ ok: false, message: 'Opened Google Voice; use its native keypad.' });
+      } else {
+        resolve({ ok: result.ok === true, message: String(result.message || '').slice(0, 220) });
+      }
+    });
+    win.webContents.send('mini-call-perform-action', { id, action });
+  });
+});
+
+ipcMain.on('mini-call-action-result', (event, result) => {
+  if (!isMainWindowSender(event) || !Number.isInteger(result?.id)) return;
+  const callback = miniCallPendingActions.get(result.id);
+  if (!callback) return;
+  miniCallPendingActions.delete(result.id);
+  callback({ ok: result.ok === true, message: String(result.message || '').slice(0, 220),
+    diagnostics: typeof result.diagnostics === 'string' ? result.diagnostics.slice(0, 3000) : undefined });
+});
+
+ipcMain.on('pref-change-mini-call-enabled', (event, enabled) => {
+  if (!isSettingsWindowSender(event) || typeof enabled !== 'boolean') return;
+  store.set('prefs.miniCallEnabled', enabled);
+  if (!enabled && miniCallWindow && !miniCallWindow.isDestroyed()) miniCallWindow.hide();
+  if (enabled && miniCallState.phase !== 'idle') void showMiniCallController();
+});
+
+ipcMain.on('pref-change-mini-call-top', (event, top) => {
+  if (!isSettingsWindowSender(event) || typeof top !== 'boolean') return;
+  store.set('prefs.miniCallAlwaysOnTop', top);
+  if (miniCallWindow && !miniCallWindow.isDestroyed()) miniCallWindow.setAlwaysOnTop(top);
+});
+
+ipcMain.on('mini-call-preview', (event) => {
+  if (!isSettingsWindowSender(event)) return;
+  void showMiniCallController({ preview: true, manual: true });
 });
 
 // ====================================================================================================================

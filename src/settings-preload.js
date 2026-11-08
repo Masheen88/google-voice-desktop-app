@@ -30,6 +30,11 @@ contextBridge.exposeInMainWorld("voiceDesktopSettings", {
   setHideDialerSidebar: (hideDialerSidebar) =>
     ipcRenderer.send("pref-change-hide-dialer-sidebar", hideDialerSidebar),
 
+  // Mini call preferences and safe local preview controls.
+  setMiniCallEnabled: (enabled) => ipcRenderer.send('pref-change-mini-call-enabled', enabled),
+  setMiniCallAlwaysOnTop: (top) => ipcRenderer.send('pref-change-mini-call-top', top),
+  previewMiniCall: () => ipcRenderer.send('mini-call-preview'),
+
   // GIF picker preferences are modified only from the trusted local Settings page.
   setGifEnabled: (enabled) => ipcRenderer.send("pref-change-gif-enabled", enabled),
   setGifApiKey: (key) => ipcRenderer.send("pref-change-gif-key", key),

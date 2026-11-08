@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-src 'none'" />
+  <title>Voice Desktop · Mini Call</title>
+  <link rel="stylesheet" href="mini-call.css" />
+</head>
+<body>
+  <main class="shell" aria-label="Mini call controller">
+    <!-- The header can be dragged anywhere on the display. -->
+    <header class="header drag">
+      <span class="brand"><span class="brand-led" id="led"></span> VOICE <span class="brand-light">DESKTOP</span></span>
+      <div class="header-actions no-drag">
+        <button id="open-main" title="Open Google Voice" aria-label="Open Google Voice">↗</button>
+        <button id="hide" title="Hide mini controller until the next call" aria-label="Hide controller">×</button>
+      </div>
+    </header>
+
+    <section class="call-info" aria-live="polite">
+      <div class="avatar" aria-hidden="true">☎</div>
+      <div class="call-copy">
+        <div class="call-state" id="call-state">Waiting for a call</div>
+        <div class="call-name" id="call-name">Google Voice</div>
+        <div class="call-timer" id="call-timer">Ready</div>
+      </div>
+      <span class="direction" id="direction" title="Call direction">—</span>
+    </section>
+
+    <!-- The initial pickup control is separate from call screening DTMF. -->
+    <div class="answer-row" id="answer-row" hidden>
+      <button id="answer" class="button answer"><span class="button-icon">☎</span><span>Answer</span></button>
+      <button id="decline" class="button decline"><span class="button-icon">✕</span><span>Decline</span></button>
+    </div>
+
+    <!-- These trigger the SAME DTMF digits as pressing Google Voice's in-call keypad. -->
+    <section class="screening" aria-labelledby="screening-title">
+      <div class="section-title" id="screening-title">CALL SCREENING · QUICK KEYS</div>
+      <div class="tone-row">
+        <button id="tone-1" class="button tone accept" title="Send keypad tone 1"><span class="tone-number">1</span><span><strong>Accept call</strong><small>Send DTMF 1</small></span></button>
+        <button id="tone-2" class="button tone voicemail" title="Send keypad tone 2"><span class="tone-number">2</span><span><strong>Voicemail</strong><small>Send DTMF 2</small></span></button>
+      </div>
+      <div class="hint" id="tone-hint">Available once Google Voice answers the call.</div>
+    </section>
+
+    <div class="lower-row">
+      <button id="mute" class="utility" title="Toggle microphone mute">◉ <span>Mute</span></button>
+      <button id="show-keypad" class="utility" title="Open the native keypad in Google Voice">⌗ <span>Keypad</span></button>
+      <button id="hangup" class="utility end" title="End call">⏹ <span>End</span></button>
+    </div>
+    <!-- Copy safe control names for debugging layout changes without copying caller information. -->
+    <div class="diagnostic-row"><button id="copy-diagnostics" title="Copy native call control diagnostics">Copy diagnostics</button></div>
+    <div id="feedback" class="feedback" aria-live="polite" role="status"></div>
+  </main>
+  <script src="mini-call.js"></script>
+</body>
+</html>

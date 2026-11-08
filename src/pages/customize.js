@@ -148,6 +148,15 @@ void (async function () {
     settingsApi.setHideDialerSidebar(checked);
   });
 
+  // Optional floating call widget. Preview disables telecom actions (no test calls are placed).
+  const miniCallEnabled = document.getElementById('mini-call-enabled');
+  miniCallEnabled.checked = prefs.miniCallEnabled !== false;
+  miniCallEnabled.addEventListener('change', () => settingsApi.setMiniCallEnabled(miniCallEnabled.checked));
+  const miniCallTop = document.getElementById('mini-call-always-top');
+  miniCallTop.checked = prefs.miniCallAlwaysOnTop !== false;
+  miniCallTop.addEventListener('change', () => settingsApi.setMiniCallAlwaysOnTop(miniCallTop.checked));
+  document.getElementById('mini-call-preview').addEventListener('click', () => settingsApi.previewMiniCall());
+
   // GIF settings are saved separately so typing a key never sends it to Google Voice.
   const gifEnabled = document.getElementById("gif-enabled");
   gifEnabled.checked = prefs.gifEnabled !== false;

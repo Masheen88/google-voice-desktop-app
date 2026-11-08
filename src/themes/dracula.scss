@@ -10,6 +10,17 @@ $selection: #44475a;
 
 @import "base";
 
+/* Google Voice header/contact titles and account status can inherit the light-theme
+   colors. Scope these overrides to dark themes, preserving semantic SVG icon colors. */
+span.title {
+  color: $foreground !important;
+}
+
+span.gb_2d.gb_Bd {
+  color: #34a853 !important;
+}
+
+
 %side-nav {
   border-right: 1px solid $selection;
 }
@@ -489,7 +500,7 @@ span#xap-auto-id-2 {
   padding-right: 0.5em;
 
   textarea.message-input {
-    color: #000; // no !important needed in most cases
+    color: $foreground !important; // Keep message text readable on this dark surface
     padding-left: 2px;
     background-color: $background;
     border-radius: 5px;

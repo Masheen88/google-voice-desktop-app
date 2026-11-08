@@ -111,7 +111,8 @@
     "release:linux": "pnpm run version:bump && pnpm run build:themes && wsl -d Ubuntu bash -lc \"/mnt/g/Custom_Projects/Custom_Apps/google-voice-desktop-app/scripts/release-linux-wsl.sh\"",
     "release": "pnpm run version:bump && pnpm run build:themes && electron-builder --windows --linux --x64 --arm64 --publish always",
     "size:windows": "node scripts/report-build-size.cjs",
-    "build:windows:small": "pnpm run version:bump && pnpm run build:themes && electron-builder --win nsis-web --x64"
+    "build:windows:small": "pnpm run version:bump && pnpm run build:themes && electron-builder --win nsis-web --x64",
+    "test:mini-call": "node --test tests/miniCall.test.cjs"
   },
   "keywords": [
     "electron",

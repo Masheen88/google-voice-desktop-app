@@ -114,3 +114,10 @@ The offline installer still contains the Electron/Chromium runtime, so its size 
 ### Publishing credentials
 
 The project archive intentionally does not include a real `.env` file. Copy `.env.example` to `.env` and set `GH_TOKEN` locally when publishing GitHub releases.
+
+
+### Floating Mini Call Controller
+
+Voice Desktop can now show a small always-on-top controller on incoming and outgoing Google Voice web calls. It includes native Answer/Decline, Mute, Hang Up, and dedicated **1 / 2** call-screening keypad shortcuts. Open **File → Settings → Floating mini call controller** to configure it or preview it without placing a call. You can also reopen it using **Ctrl+Shift+M** or from the tray menu.
+
+See [MINI_CALL_CONTROLLER.md](MINI_CALL_CONTROLLER.md) for usage, supported call stages, known limitations, and tests.

@@ -24,6 +24,16 @@ $success: #1e8e3e;
 
 @import "base";
 
+/* Google Voice header/contact titles and account status can inherit the light-theme
+   colors. Scope these overrides to dark themes, preserving semantic SVG icon colors. */
+span.title {
+  color: $foreground !important;
+}
+
+span.gb_2d.gb_Bd {
+  color: #34a853 !important;
+}
+
 /* =========================
    Global DarkPlus surface
    ========================= */
@@ -768,4 +778,15 @@ gv-message-entry gv-message-actions mat-icon {
 
 .inbox-summary-container.ng-star-inserted {
   background: $background;
+}
+
+/* User preference: hide this disabled Google Voice dialer call button.
+   The Angular-generated ng-tns class can change with Google Voice deployments.
+   IMPORTANT: only disabled controls should be hidden, not active in-call buttons. */
+button.mdc-button.mat-mdc-button-base.call-button.ng-tns-c222023343-2.mdc-button--unelevated.mat-mdc-unelevated-button.mat-mdc-button-disabled.mat-unthemed {
+  display: none !important;
+}
+
+.mat-drawer-inner-container {
+  background-color: $background;
 }
