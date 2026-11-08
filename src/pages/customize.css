@@ -413,3 +413,9 @@ html[data-theme="darkplus"] {
     padding: 12px 18px;
   }
 }
+
+/* Keep the GIF settings controls readable on narrow Settings windows. */
+.gif-key-row {display:flex;align-items:center;gap:8px}
+.gif-key-row input {min-width:0;flex:1}
+.gif-key-row button {flex:0 0 auto;margin-top:8px}
+@media (max-width:570px) {.gif-key-row {flex-wrap:wrap}.gif-key-row button {width:100%;margin-top:0}}

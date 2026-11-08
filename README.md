@@ -14,6 +14,10 @@ Currently supports both OSX, Windows 10 & Linux.
 
 Questions? Ideas? Join us in discord [<https://discord.gg/3SSS6vkKET>](https://discord.gg/3SSS6vkKET)
 
+## GIF picker (new)
+
+This fork includes a GIF search and attachment picker for Google Voice conversations. It supports trending/search, favorites, recent GIFs, a GIF button near the message editor, a `Ctrl+Shift+G` shortcut, and a manual-attachment fallback. Configure a free GIPHY API key under **File → Settings → GIF picker**. The feature does not send messages automatically. See [GIF_PICKER.md](GIF_PICKER.md) for setup, testing and limitations.
+
 ## Installation
 
 Go to the [Releases Page](https://github.com/Jerrkawz/google-voice-desktop-app/releases) and download the release for your OS.

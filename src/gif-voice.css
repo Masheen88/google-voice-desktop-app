@@ -1,0 +1,29 @@
+/* Voice Desktop GIF launcher is injected into Google's composer by the sandboxed preload.
+   Unique class names avoid conflicts with user-selected Google Voice themes. */
+button.voice-desktop-gif-trigger {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 9px !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  font: 800 12px/1 system-ui, sans-serif !important;
+  height: 34px !important;
+  justify-content: center !important;
+  letter-spacing: .025em !important;
+  margin: 0 4px !important;
+  min-width: 42px !important;
+  padding: 0 6px !important;
+  position: relative !important;
+  vertical-align: middle !important;
+  z-index: 2 !important;
+}
+button.voice-desktop-gif-trigger:hover,
+button.voice-desktop-gif-trigger:focus-visible {
+  background: rgba(110,118,145,.18) !important;
+  outline: 2px solid rgba(116,120,228,.52) !important;
+}
+button.voice-desktop-gif-trigger[disabled] { opacity: .4 !important; cursor: default !important; }

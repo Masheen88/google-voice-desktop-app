@@ -91,6 +91,7 @@
   },
   "scripts": {
     "build:themes": "node scripts/build-themes.cjs",
+    "test:gif": "node --test tests/gifService.test.cjs",
     "prestart": "pnpm run build:themes",
     "start": "electron .",
     "predev": "pnpm run build:themes",

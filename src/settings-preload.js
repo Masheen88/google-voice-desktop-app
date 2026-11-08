@@ -29,4 +29,9 @@ contextBridge.exposeInMainWorld("voiceDesktopSettings", {
     ipcRenderer.send("pref-change-exit-on-close", exitOnClose),
   setHideDialerSidebar: (hideDialerSidebar) =>
     ipcRenderer.send("pref-change-hide-dialer-sidebar", hideDialerSidebar),
+
+  // GIF picker preferences are modified only from the trusted local Settings page.
+  setGifEnabled: (enabled) => ipcRenderer.send("pref-change-gif-enabled", enabled),
+  setGifApiKey: (key) => ipcRenderer.send("pref-change-gif-key", key),
+  setGifRating: (rating) => ipcRenderer.send("pref-change-gif-rating", rating),
 });

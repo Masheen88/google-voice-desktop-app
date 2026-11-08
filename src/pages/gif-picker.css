@@ -1,0 +1,44 @@
+:root {color-scheme: dark;--bg:#171923;--panel:#202431;--line:#35394b;--text:#f6f7fc;--muted:#a7adbf;--primary:#ae8cff;--hover:#303547;}
+* {box-sizing:border-box}
+html,body {height:100%;margin:0;overflow:hidden;background:transparent;color:var(--text);font:13px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input {font:inherit}
+button {cursor:pointer}
+button:focus-visible,input:focus-visible {outline:2px solid var(--primary);outline-offset:1px}
+.picker {height:100%;display:flex;flex-direction:column;background:var(--bg);border:1px solid #41465c;border-radius:15px;overflow:hidden;box-shadow:0 10px 40px #0005}
+.header {display:flex;align-items:center;justify-content:space-between;padding:13px 13px 8px 15px}
+.header-left {display:flex;align-items:center;gap:10px}
+.logo {background:linear-gradient(130deg,#b663ec,#7a6eff);color:white;font-weight:850;font-size:11px;padding:7px 6px;border-radius:7px}
+.title {font-size:15px;font-weight:750;letter-spacing:-.02em}
+.icon-button {border:0;color:var(--muted);background:transparent;border-radius:8px;height:31px;width:31px}
+.icon-button:hover {background:var(--hover);color:white}
+.search-wrap {height:38px;margin:5px 13px 10px;position:relative;display:flex;align-items:center;color:var(--muted);background:#282d3e;border:1px solid #454b60;border-radius:9px;padding:0 9px;gap:9px}
+.search-wrap:focus-within {border-color:var(--primary)}
+.search-wrap input {flex:1;min-width:0;color:white;background:transparent;border:0;outline:0;font-size:13px}
+.search-wrap input::placeholder {color:#a5a9b9}
+kbd {font:11px ui-monospace,monospace;background:#3d4357;padding:2px 5px;border-radius:3px}
+.tabs {display:flex;gap:4px;border-bottom:1px solid var(--line);padding:0 11px}
+.tabs button {border:0;color:#a9afc4;border-bottom:2px solid transparent;background:transparent;padding:9px 10px 10px;font-weight:600}
+.tabs button:hover {color:white}
+.tabs button.active {color:#d7c8ff;border-color:var(--primary)}
+.quick {display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding:11px 13px 4px}
+.quick button {white-space:nowrap;border-radius:7px;background:#292e40;color:#d8dced;border:1px solid #3e4359;padding:5px 9px;font-size:11px}
+.quick button:hover {background:#393e56}
+.results-wrap {overflow-y:auto;flex:1;min-height:0;scrollbar-color:#565c74 transparent;scrollbar-width:thin;padding:10px 12px 12px}
+.grid {columns:2;column-gap:8px}
+.gif-card {position:relative;break-inside:avoid;display:block;margin-bottom:8px;background:#2b3043;border-radius:9px;overflow:hidden;border:1px solid #41465b}
+.gif-card:hover {border-color:var(--primary)}
+.gif-preview {display:block;width:100%;min-height:86px;max-height:184px;object-fit:cover;cursor:pointer;background:linear-gradient(120deg,#2b3043,#383c50,#2b3043)}
+.gif-select {display:block;width:100%;padding:0;border:0;background:transparent;position:relative}
+.gif-select:focus-visible {outline:3px solid var(--primary);outline-offset:-3px}
+.star {position:absolute;right:5px;top:5px;z-index:2;background:#0c0d13cc;border:0;border-radius:6px;color:white;font-size:16px;width:28px;height:28px;opacity:0;transition:opacity .12s}
+.gif-card:hover .star,.star:focus-visible,.star.saved {opacity:1}
+.star.saved {color:#ffd57b}
+.status {color:var(--muted);text-align:center;padding:28px 14px;line-height:1.55;white-space:pre-line}
+.status[hidden],.more[hidden] {display:none!important}
+.more {display:block;margin:10px auto;border:1px solid #434960;color:#e6d8ff;border-radius:7px;background:#313248;padding:8px 14px}
+footer {padding:10px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--line);color:#9da3b7;font-size:10px}
+.credit {color:var(--muted);border:0;background:transparent;white-space:nowrap;padding:0}
+.credit b {font-weight:900;color:#fff;letter-spacing:.01em}
+.credit:hover {color:var(--primary)}
+.sr-only {position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+body[data-busy="true"] .gif-select {cursor:progress;opacity:.7}

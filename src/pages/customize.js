@@ -148,6 +148,29 @@ void (async function () {
     settingsApi.setHideDialerSidebar(checked);
   });
 
+  // GIF settings are saved separately so typing a key never sends it to Google Voice.
+  const gifEnabled = document.getElementById("gif-enabled");
+  gifEnabled.checked = prefs.gifEnabled !== false;
+  gifEnabled.addEventListener("change", () => settingsApi.setGifEnabled(gifEnabled.checked));
+
+  const gifKey = document.getElementById("gif-key");
+  const gifKeyStatus = document.getElementById("gif-key-status");
+  gifKey.value = prefs.gifApiKey || "";
+  const gifSave = document.getElementById("gif-key-save");
+  gifSave.addEventListener("click", () => {
+    const value = gifKey.value.trim();
+    if (value.length > 150 || (value && !/^[a-zA-Z0-9_-]+$/.test(value))) {
+      gifKeyStatus.textContent = "Invalid key. Check the key copied from GIPHY.";
+      return;
+    }
+    settingsApi.setGifApiKey(value);
+    gifKeyStatus.textContent = value ? "GIPHY API key saved locally." : "GIPHY API key removed.";
+  });
+
+  const gifRating = document.getElementById("gif-rating");
+  gifRating.value = ["g", "pg", "pg-13", "r"].includes(prefs.gifRating) ? prefs.gifRating : "pg";
+  gifRating.addEventListener("change", () => settingsApi.setGifRating(gifRating.value));
+
   // Close the window if the user clicks the "Close" button.
   const closeButton = document.getElementById("close-button");
   closeButton.addEventListener("click", () => {

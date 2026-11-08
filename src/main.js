@@ -11,10 +11,14 @@ const {
   shell,
   powerMonitor,
   systemPreferences,
+  screen,
+  dialog,
 } = require("electron");
 const constants = require("./constants");
 const BadgeGenerator = require("./badge_generator");
 const path = require("node:path");
+const fs = require("node:fs");
+const { downloadGif, normalizeGif, normalizeSavedGifs } = require("./utils/gifService");
 const CSSInjector = require("./utils/cssInjector");
 const PreferencesStore = require("./utils/preferencesStore");
 const AutoLaunch = require("./utils/autoLaunch");
@@ -44,6 +48,12 @@ let cssInjector;
 let tray;
 let win; // The main application window
 let settingsWindow; // When not null, the "Settings" window, which is currently open
+let gifPickerWindow; // Local, frameless in-app picker (not a Google Voice web page)
+let gifPickerStyleKey = null;
+let gifPickerDialogOpen = false;
+let gifAttachmentInProgress = false;
+let nextGifAttachmentId = 0;
+const pendingGifAttachments = new Map();
 let saveWindowSizeTimer = null; // Debounces rapid resize events before persisting bounds
 
 // Only one instance of the app should run
@@ -208,6 +218,16 @@ function createWindow() {
             void showSettingsWindow();
           },
         }, // Open/display our Settings window
+        {
+          label: "&GIF picker",
+          accelerator: "CommandOrControl+Shift+G",
+          click: () => {
+            if (store.get("prefs.gifEnabled", true) !== false) {
+              const bounds = win?.getContentBounds();
+              if (bounds) void showGifPicker({ x: bounds.width - 80, y: bounds.height - 58 });
+            }
+          },
+        }, // Keyboard fallback if Google's toolbar markup changes.
         { type: "separator" },
         {
           label: "&Close", // Close the window
@@ -351,6 +371,15 @@ function createWindow() {
   // to support user customizations that we allow the user to make from within our application UI.
   loadGoogleVoice();
   win.webContents.on("did-finish-load", () => {
+    // Keep the GIF launcher's styling outside Google's page CSP. The launcher itself is
+    // installed in the already-isolated preload and never exposes native app APIs.
+    if (isGoogleVoiceUrl(win.webContents.getURL())) {
+      const stylesheet = fs.readFileSync(path.join(__dirname, "gif-voice.css"), "utf8");
+      win.webContents.insertCSS(stylesheet).then((key) => {
+        gifPickerStyleKey = key;
+      }).catch((error) => console.error("GIF button stylesheet error:", error));
+    }
+
     // Only apply Google Voice-specific custom CSS on the actual Voice application page.
     // This prevents a custom theme from accidentally restyling the Google Account login page.
     if (!isGoogleVoiceUrl(win.webContents.getURL())) return;
@@ -445,6 +474,8 @@ function createWindow() {
   win.on("resize", saveWindowSize);
 
   win.on("closed", () => {
+    if (gifPickerWindow && !gifPickerWindow.isDestroyed()) gifPickerWindow.close();
+    gifPickerStyleKey = null;
     win = null;
     cssInjector = null;
     badgeGenerator = null;
@@ -614,6 +645,7 @@ function showMainWindow() {
 
 // Creates (if it doesn't already exist) this application's "Settings" window, and then displays it to the user.
 async function showSettingsWindow() {
+  if (gifPickerWindow && !gifPickerWindow.isDestroyed()) gifPickerWindow.hide();
   if (!settingsWindow) {
     // Create our Settings window, keeping a global reference to it.  This reference allows
     // us to know when the window is open, preventing the user from opening it a second time.
@@ -990,4 +1022,235 @@ ipcMain.on("pref-change-hide-dialer-sidebar", (event, hideDialerSidebar) => {
     cssInjector.showHideDialerSidebar(hideDialerSidebar);
   }
   store.set("prefs.hideDialerSidebar", hideDialerSidebar);
+});
+
+// ====================================================================================================================
+// GIF picker: isolated local UI, validated remote-media downloads, no unofficial Google Voice send API.
+// ====================================================================================================================
+
+/** Only the currently navigated Google Voice page may control its GIF launcher. */
+function isVoiceGifSender(event) {
+  return isMainWindowSender(event) && isGoogleVoiceUrl(event.sender.getURL());
+}
+
+/** Only the actual local picker window may request searches/favorites/attachments. */
+function assertGifPickerSender(event) {
+  if (!gifPickerWindow || gifPickerWindow.isDestroyed() || event.sender !== gifPickerWindow.webContents) {
+    throw new Error("Rejected GIF request from an untrusted window.");
+  }
+}
+
+/** Keep settings in a small, serializable subset for the trusted picker UI. */
+function getGifPickerSettings() {
+  return {
+    apiKey: store.get("prefs.gifApiKey", ""),
+    rating: store.get("prefs.gifRating", "pg"),
+    favorites: normalizeSavedGifs(store.get("prefs.gifFavorites", [])),
+    recent: normalizeSavedGifs(store.get("prefs.gifRecent", [])),
+    theme: store.get("prefs.theme", "default"),
+  };
+}
+
+/** Toggle the picker near the message composer without leaving the current conversation. */
+ipcMain.on("gif-toggle-picker", (event, rect) => {
+  if (!isVoiceGifSender(event) || store.get("prefs.gifEnabled", true) === false) return;
+  if (gifPickerWindow && !gifPickerWindow.isDestroyed() && gifPickerWindow.isVisible()) {
+    gifPickerWindow.hide();
+    return;
+  }
+  void showGifPicker(rect);
+});
+
+/** Send the small launcher preference only; do not reveal the API key to Google Voice. */
+ipcMain.handle("gif-is-enabled", (event) => {
+  if (!isVoiceGifSender(event)) throw new Error("Untrusted GIF preference request.");
+  return store.get("prefs.gifEnabled", true) !== false;
+});
+
+async function showGifPicker(rect) {
+  if (!win || win.isDestroyed()) return;
+  const width = 410;
+  const height = 510;
+  const content = win.getContentBounds();
+  const workArea = screen.getDisplayMatching(win.getBounds()).workArea;
+  // The DOM rect is a suggestion, never trusted as a screen-sized position.
+  const xInPage = Number.isFinite(rect?.x) ? Math.max(0, Math.min(content.width, rect.x)) : content.width - 70;
+  const yInPage = Number.isFinite(rect?.y) ? Math.max(0, Math.min(content.height, rect.y)) : content.height - 60;
+  const x = Math.max(workArea.x, Math.min(workArea.x + workArea.width - width, Math.round(content.x + xInPage - 15)));
+  let y = content.y + yInPage - height - 10;
+  if (y < workArea.y) y = content.y + yInPage + 38;
+  y = Math.max(workArea.y, Math.min(workArea.y + workArea.height - height, Math.round(y)));
+
+  if (!gifPickerWindow || gifPickerWindow.isDestroyed()) {
+    gifPickerWindow = new BrowserWindow({
+      width, height, x, y,
+      parent: win,
+      frame: false,
+      skipTaskbar: true,
+      autoHideMenuBar: true,
+      resizable: false,
+      minimizable: false,
+      maximizable: false,
+      backgroundColor: "#171923",
+      show: false,
+      webPreferences: {
+        preload: path.join(__dirname, "gif-picker-preload.js"),
+        contextIsolation: true,
+        sandbox: true,
+        nodeIntegration: false,
+        webviewTag: false,
+      },
+    });
+    gifPickerWindow.setMenu(null);
+    gifPickerWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+    gifPickerWindow.webContents.on("will-navigate", (navigationEvent) => navigationEvent.preventDefault());
+    gifPickerWindow.on("blur", () => {
+      if (!gifPickerDialogOpen && !gifAttachmentInProgress && gifPickerWindow && !gifPickerWindow.isDestroyed()) gifPickerWindow.hide();
+    });
+    gifPickerWindow.on("closed", () => { gifPickerWindow = null; });
+    await gifPickerWindow.loadFile(path.join(__dirname, "pages", "gif-picker.html"));
+  } else {
+    gifPickerWindow.setBounds({ x, y, width, height });
+    // Reload to refresh key, favorites and trending results each time it opens.
+    await gifPickerWindow.reload();
+  }
+  if (gifPickerWindow && !gifPickerWindow.isDestroyed()) gifPickerWindow.show();
+}
+
+ipcMain.handle("gif-picker-settings", (event) => {
+  assertGifPickerSender(event);
+  return getGifPickerSettings();
+});
+
+ipcMain.on("gif-picker-close", (event) => {
+  assertGifPickerSender(event);
+  gifPickerWindow.hide();
+});
+
+ipcMain.on("gif-picker-open-giphy", (event) => {
+  assertGifPickerSender(event);
+  openExternalSafe("https://giphy.com/");
+});
+
+ipcMain.handle("gif-save-favorite", (event, rawGif) => {
+  assertGifPickerSender(event);
+  const gif = normalizeGif(rawGif);
+  if (!gif) throw new Error("Invalid GIPHY result.");
+  const items = normalizeSavedGifs(store.get("prefs.gifFavorites", []));
+  const next = [gif, ...items.filter((item) => item.id !== gif.id)].slice(0, 50);
+  store.set("prefs.gifFavorites", next);
+  return next;
+});
+
+ipcMain.handle("gif-remove-favorite", (event, id) => {
+  assertGifPickerSender(event);
+  if (typeof id !== "string") throw new Error("Invalid GIF identifier.");
+  const next = normalizeSavedGifs(store.get("prefs.gifFavorites", []))
+    .filter((item) => item.id !== id);
+  store.set("prefs.gifFavorites", next);
+  return next;
+});
+
+/**
+ * Wait for the isolated Google Voice preload to dispatch the GIF to the normal attachment widget.
+ * The preload reports that dispatch occurred, NOT that Google Voice uploaded or delivered the MMS.
+ */
+function requestVoiceGifAttachment(file) {
+  return new Promise((resolve) => {
+    if (!win || win.isDestroyed() || !isGoogleVoiceUrl(win.webContents.getURL())) {
+      resolve({ ok: false, error: "Open a Google Voice conversation first." });
+      return;
+    }
+    const id = ++nextGifAttachmentId;
+    const timer = setTimeout(() => {
+      pendingGifAttachments.delete(id);
+      resolve({ ok: false, error: "Google Voice did not respond to the attachment request." });
+    }, 8000);
+    pendingGifAttachments.set(id, (result) => {
+      clearTimeout(timer);
+      resolve(result);
+    });
+    win.webContents.send("gif-attach-request", {
+      id,
+      filename: file.filename,
+      // Uint8Array is supported by Electron's structured-clone IPC serialization.
+      bytes: Uint8Array.from(file.bytes),
+    });
+  });
+}
+
+ipcMain.on("gif-attach-result", (event, result) => {
+  if (!isVoiceGifSender(event) || !Number.isInteger(result?.id)) return;
+  const resolve = pendingGifAttachments.get(result.id);
+  if (!resolve) return;
+  pendingGifAttachments.delete(result.id);
+  resolve({
+    ok: result.ok === true,
+    error: typeof result.error === "string" ? result.error.slice(0, 300) : undefined,
+  });
+});
+
+/** Only valid and under-limit GIF bytes are transferred to Google Voice. Never auto-send. */
+ipcMain.handle("gif-select", async (event, rawGif) => {
+  assertGifPickerSender(event);
+  if (gifAttachmentInProgress) return { ok: false, error: "Another GIF is being prepared." };
+  gifAttachmentInProgress = true;
+  try {
+    const file = await downloadGif(rawGif);
+    const result = await requestVoiceGifAttachment(file);
+    if (result.ok) {
+      const items = normalizeSavedGifs(store.get("prefs.gifRecent", []));
+      store.set("prefs.gifRecent", [file.gif, ...items.filter((item) => item.id !== file.gif.id)].slice(0, 24));
+    }
+    return result;
+  } catch (error) {
+    return { ok: false, error: error?.message || "Could not download GIF." };
+  } finally {
+    gifAttachmentInProgress = false;
+  }
+});
+
+/** Fallback when Google changes the attachment DOM: save a GIF for manual use. */
+ipcMain.handle("gif-save-file", async (event, rawGif) => {
+  assertGifPickerSender(event);
+  try {
+    const file = await downloadGif(rawGif);
+    gifPickerDialogOpen = true;
+    let result;
+    try {
+      result = await dialog.showSaveDialog(gifPickerWindow, {
+        defaultPath: path.join(app.getPath("downloads"), file.filename),
+        filters: [{ name: "Animated GIF", extensions: ["gif"] }],
+      });
+    } finally {
+      gifPickerDialogOpen = false;
+    }
+    if (result.canceled || !result.filePath) return { ok: false, error: "Save canceled." };
+    await fs.promises.writeFile(result.filePath, file.bytes);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error?.message || "Could not save GIF." };
+  }
+});
+
+// GIF controls in Settings can update the launcher without a Google Voice reload.
+ipcMain.on("pref-change-gif-enabled", (event, enabled) => {
+  if (!isSettingsWindowSender(event) || typeof enabled !== "boolean") return;
+  store.set("prefs.gifEnabled", enabled);
+  if (!enabled && gifPickerWindow && !gifPickerWindow.isDestroyed()) gifPickerWindow.hide();
+  if (win && !win.isDestroyed() && isGoogleVoiceUrl(win.webContents.getURL())) {
+    win.webContents.send("gif-enabled-changed", enabled);
+  }
+});
+
+ipcMain.on("pref-change-gif-key", (event, key) => {
+  if (!isSettingsWindowSender(event) || typeof key !== "string") return;
+  const candidate = key.trim();
+  if (candidate.length > 150 || (candidate && !/^[a-zA-Z0-9_-]+$/.test(candidate))) return;
+  store.set("prefs.gifApiKey", candidate);
+});
+
+ipcMain.on("pref-change-gif-rating", (event, rating) => {
+  if (!isSettingsWindowSender(event) || !["g", "pg", "pg-13", "r"].includes(rating)) return;
+  store.set("prefs.gifRating", rating);
 });
