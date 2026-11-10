@@ -1,58 +1,185 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-src 'none'" />
-  <title>Voice Desktop · Mini Call</title>
-  <link rel="stylesheet" href="mini-call.css" />
-</head>
-<body>
-  <main class="shell" aria-label="Mini call controller">
-    <!-- The header can be dragged anywhere on the display. -->
-    <header class="header drag">
-      <span class="brand"><span class="brand-led" id="led"></span> VOICE <span class="brand-light">DESKTOP</span></span>
-      <div class="header-actions no-drag">
-        <button id="open-main" title="Open Google Voice" aria-label="Open Google Voice">↗</button>
-        <button id="hide" title="Hide mini controller until the next call" aria-label="Hide controller">×</button>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-src 'none'"
+    />
+    <title>Voice Desktop · Call controls</title>
+    <link rel="stylesheet" href="mini-call.css" />
+  </head>
+  <body>
+    <!-- Local, sandboxed desktop controller. All actions execute against Google's own call UI. -->
+    <main class="shell" aria-label="Google Voice floating call controller">
+      <header class="header drag">
+        <div class="brand" aria-label="Voice Desktop">
+          <span>Voice call</span>
+          <span class="brand-led" id="led" aria-hidden="true"></span>
+        </div>
+        <div class="header-actions no-drag">
+          <button
+            id="open-main"
+            title="Open Google Voice"
+            aria-label="Open Google Voice"
+          >
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M8 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3M13 3h8v8m0-8-11 11"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            id="hide"
+            title="Minimize to tray (call continues)"
+            aria-label="Minimize mini controller"
+          >
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M5 16h14"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <section class="call-info" aria-live="polite">
+        <div class="avatar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path
+              d="M6.6 3.6c-.5-.5-1.2-.6-1.8-.3L2.4 4.5c-.6.3-.9.9-.9 1.5A17.8 17.8 0 0 0 18 22.5c.6 0 1.2-.4 1.5-.9l1.2-2.4c.3-.6.2-1.3-.3-1.8l-3.5-3.5c-.5-.5-1.3-.6-1.9-.2l-1.9 1.2a14 14 0 0 1-4-4l1.2-1.9c.4-.6.3-1.4-.2-1.9L6.6 3.6Z"
+              fill="currentColor"
+            />
+          </svg>
+        </div>
+        <div class="call-copy">
+          <div class="call-state" id="call-state">Waiting for a call</div>
+          <div class="call-name" id="call-name">Google Voice</div>
+          <div class="call-timer" id="call-timer">Ready</div>
+        </div>
+      </section>
+
+      <!-- Ringing controls are shown only until the first Answer action. -->
+      <div class="answer-row" id="answer-row" hidden>
+        <button id="answer" class="pill answer">
+          <span class="pill-icon" aria-hidden="true">✓</span><span>Answer</span>
+        </button>
+        <button id="decline" class="pill decline">
+          <span class="pill-icon" aria-hidden="true">×</span
+          ><span>Decline</span>
+        </button>
       </div>
-    </header>
 
-    <section class="call-info" aria-live="polite">
-      <div class="avatar" aria-hidden="true">☎</div>
-      <div class="call-copy">
-        <div class="call-state" id="call-state">Waiting for a call</div>
-        <div class="call-name" id="call-name">Google Voice</div>
-        <div class="call-timer" id="call-timer">Ready</div>
+      <!-- The large shortcuts activate actual Google Voice in-call DTMF keys. The native keypad may open briefly. -->
+      <section
+        class="screening"
+        id="screening-section"
+        aria-labelledby="screening-title"
+        hidden
+      >
+        <div class="section-title" id="screening-title">Call screening</div>
+        <div class="tone-row">
+          <button
+            id="tone-1"
+            class="tone accept"
+            title="Send digit 1 to Google Voice"
+            aria-label="1 accept call"
+          >
+            <span class="tone-number">1</span
+            ><span class="tone-copy"
+              ><strong>Accept</strong><small>Press 1</small></span
+            >
+          </button>
+          <button
+            id="tone-2"
+            class="tone voicemail"
+            title="Send digit 2 to Google Voice"
+            aria-label="2 send to voicemail"
+          >
+            <span class="tone-number">2</span
+            ><span class="tone-copy"
+              ><strong>Voicemail</strong><small>Press 2</small></span
+            >
+          </button>
+        </div>
+        <p class="hint" id="tone-hint">Choose an option when Google asks.</p>
+      </section>
+
+      <div class="lower-row">
+        <button id="mute" class="utility" title="Mute or unmute microphone">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect
+              x="9"
+              y="2"
+              width="6"
+              height="12"
+              rx="3"
+              stroke="currentColor"
+              stroke-width="1.7"
+            />
+            <path
+              d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+            />
+          </svg>
+          <span>Mute</span>
+        </button>
+        <button
+          id="show-keypad"
+          class="utility"
+          title="Open Google's native in-call keypad"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="5" cy="5" r="1.6" />
+            <circle cx="12" cy="5" r="1.6" />
+            <circle cx="19" cy="5" r="1.6" />
+            <circle cx="5" cy="12" r="1.6" />
+            <circle cx="12" cy="12" r="1.6" />
+            <circle cx="19" cy="12" r="1.6" />
+            <circle cx="5" cy="19" r="1.6" />
+            <circle cx="12" cy="19" r="1.6" />
+            <circle cx="19" cy="19" r="1.6" /></svg
+          ><span>Keypad</span>
+        </button>
+        <button id="hangup" class="utility end" title="End current call">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M3.1 15.5a13.8 13.8 0 0 1 17.8 0 1.9 1.9 0 0 1 .6 2.1l-.9 2c-.3.8-1.3 1.2-2.1.9l-3.1-1.2c-.7-.3-1.1-1-1-1.7l.1-1.2a10 10 0 0 0-5 0l.1 1.2c.1.7-.3 1.4-1 1.7l-3.1 1.2c-.8.3-1.8-.1-2.1-.9l-.9-2a1.9 1.9 0 0 1 .6-2.1Z"
+              fill="currentColor"
+            /></svg
+          ><span>End call</span>
+        </button>
       </div>
-      <span class="direction" id="direction" title="Call direction">—</span>
-    </section>
 
-    <!-- The initial pickup control is separate from call screening DTMF. -->
-    <div class="answer-row" id="answer-row" hidden>
-      <button id="answer" class="button answer"><span class="button-icon">☎</span><span>Answer</span></button>
-      <button id="decline" class="button decline"><span class="button-icon">✕</span><span>Decline</span></button>
-    </div>
-
-    <!-- These trigger the SAME DTMF digits as pressing Google Voice's in-call keypad. -->
-    <section class="screening" aria-labelledby="screening-title">
-      <div class="section-title" id="screening-title">CALL SCREENING · QUICK KEYS</div>
-      <div class="tone-row">
-        <button id="tone-1" class="button tone accept" title="Send keypad tone 1"><span class="tone-number">1</span><span><strong>Accept call</strong><small>Send DTMF 1</small></span></button>
-        <button id="tone-2" class="button tone voicemail" title="Send keypad tone 2"><span class="tone-number">2</span><span><strong>Voicemail</strong><small>Send DTMF 2</small></span></button>
-      </div>
-      <div class="hint" id="tone-hint">Available once Google Voice answers the call.</div>
-    </section>
-
-    <div class="lower-row">
-      <button id="mute" class="utility" title="Toggle microphone mute">◉ <span>Mute</span></button>
-      <button id="show-keypad" class="utility" title="Open the native keypad in Google Voice">⌗ <span>Keypad</span></button>
-      <button id="hangup" class="utility end" title="End call">⏹ <span>End</span></button>
-    </div>
-    <!-- Copy safe control names for debugging layout changes without copying caller information. -->
-    <div class="diagnostic-row"><button id="copy-diagnostics" title="Copy native call control diagnostics">Copy diagnostics</button></div>
-    <div id="feedback" class="feedback" aria-live="polite" role="status"></div>
-  </main>
-  <script src="mini-call.js"></script>
-</body>
+      <footer class="footer">
+        <div
+          id="feedback"
+          class="feedback"
+          aria-live="polite"
+          role="status"
+        ></div>
+        <!-- Explicit build badge helps distinguish an old tray/installer process from the latest source. -->
+        <span class="build-mark" title="Mini-controller interface build"
+          >v13</span
+        >
+        <button
+          id="copy-diagnostics"
+          title="Copy call-control paths and recent action trace (no caller details)"
+        >
+          Diagnostics
+        </button>
+      </footer>
+    </main>
+    <script src="mini-call.js"></script>
+  </body>
 </html>

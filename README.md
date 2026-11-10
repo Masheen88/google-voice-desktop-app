@@ -121,3 +121,8 @@ The project archive intentionally does not include a real `.env` file. Copy `.en
 Voice Desktop can now show a small always-on-top controller on incoming and outgoing Google Voice web calls. It includes native Answer/Decline, Mute, Hang Up, and dedicated **1 / 2** call-screening keypad shortcuts. Open **File → Settings → Floating mini call controller** to configure it or preview it without placing a call. You can also reopen it using **Ctrl+Shift+M** or from the tray menu.
 
 See [MINI_CALL_CONTROLLER.md](MINI_CALL_CONTROLLER.md) for usage, supported call stages, known limitations, and tests.
+
+## Mini call controller — v10 background input
+
+The floating call controller now temporarily renders the main Voice window offscreen on Windows for in-call screening shortcuts while the app is hidden to the tray. It remains always on top and restores the original window state after each 1/2 action. See [MINI_CALL_V10_RENDERED_BACKGROUND_FIX.md](MINI_CALL_V10_RENDERED_BACKGROUND_FIX.md) for setup, limitations, and diagnostics.
+

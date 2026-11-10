@@ -27,3 +27,39 @@ button.voice-desktop-gif-trigger:focus-visible {
   outline: 2px solid rgba(116,120,228,.52) !important;
 }
 button.voice-desktop-gif-trigger[disabled] { opacity: .4 !important; cursor: default !important; }
+
+
+/* Independent compact call-controller toggle, intentionally not themed by Voice's Angular CSS. */
+button.voice-desktop-mini-toggle {
+  position: fixed !important;
+  z-index: 200 !important;
+  top: 65px !important;
+  right: 17px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  min-height: 33px !important;
+  padding: 6px 10px !important;
+  background: #fff !important;
+  color: #3c4043 !important;
+  border: 1px solid #dadce0 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 2px 8px rgba(32,33,36,.12) !important;
+  font: 500 12px/1.1 "Google Sans", "Segoe UI", sans-serif !important;
+  cursor: pointer !important;
+}
+button.voice-desktop-mini-toggle:hover { background: #f1f3f4 !important; }
+button.voice-desktop-mini-toggle.is-open { color: #1967d2 !important; border-color: #a8c7fa !important; }
+button.voice-desktop-mini-toggle .voice-desktop-mini-dot { width: 6px; height: 6px; border-radius: 50%; background: #9aa0a6; }
+button.voice-desktop-mini-toggle.is-live .voice-desktop-mini-dot { background: #34a853; }
+button.voice-desktop-mini-toggle.is-ringing .voice-desktop-mini-dot { background: #f9ab00; }
+button.voice-desktop-mini-toggle:focus-visible { outline: 2px solid #1a73e8 !important; outline-offset: 2px !important; }
+button.voice-desktop-mini-toggle:disabled { opacity: .4 !important; pointer-events: none !important; }
+@media (prefers-color-scheme: dark) {
+  button.voice-desktop-mini-toggle { background: #292a2d !important; color: #e8eaed !important; border-color: #5f6368 !important; }
+  button.voice-desktop-mini-toggle:hover { background: #3c4043 !important; }
+}
+@media (max-width: 720px) {
+  button.voice-desktop-mini-toggle { right: 9px !important; top: 61px !important; }
+  button.voice-desktop-mini-toggle .voice-desktop-mini-label { display: none !important; }
+}
